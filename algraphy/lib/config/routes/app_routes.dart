@@ -1,3 +1,4 @@
+
 class AppRoutes {
   static const register = '/register';
   static const login = '/login';
@@ -15,4 +16,5 @@ class AppRoutes {
   static const contact = '/contact';
   static const settings = '/settings';
   static const comingSoon = '/coming-soon';
+  static const create_user = '/admin_create_user';
 }

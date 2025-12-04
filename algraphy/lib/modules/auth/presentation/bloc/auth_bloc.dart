@@ -15,22 +15,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     });
 
     // Registration
-    on<RegisterRequested>((event, emit) async {
-      emit(AuthLoading());
-      try {
-        final user = await _repo.register(
-          name: event.name,
-          email: event.email,
-          password: event.password,
-        );
+    // on<RegisterRequested>((event, emit) async {
+    //   emit(AuthLoading());
+    //   try {
+    //     final user = await _repo.register(
+    //       name: event.name,
+    //       email: event.email,
+    //       password: event.password,
+    //     );
 
-        // Emit success
-        emit(AuthAuthenticated(user));
-      } catch (ex) {
-        // Only emit AuthFailure once
-        emit(AuthFailure(ex.toString()));
-      }
-    });
+    //     // Emit success
+    //     emit(AuthAuthenticated(user));
+    //   } catch (ex) {
+    //     // Only emit AuthFailure once
+    //     emit(AuthFailure(ex.toString()));
+    //   }
+    // });
 
     // Login
     on<LoginRequested>((event, emit) async {

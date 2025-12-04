@@ -1,16 +1,24 @@
+import 'package:algraphy/modules/auth/data/models/user_model.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/typography.dart';
 import 'main_scaffold.dart';
 
-class ComingSoonPage extends StatelessWidget {
+class ComingSoonPage extends StatefulWidget {
   final String title;
-  const ComingSoonPage({super.key, required this.title});
+  final UserModel user;
+  const ComingSoonPage({super.key, required this.title,required this.user});
 
+  @override
+  State<ComingSoonPage> createState() => _ComingSoonPageState();
+}
+
+class _ComingSoonPageState extends State<ComingSoonPage> {
   @override
   Widget build(BuildContext context) {
     return MainScaffold(
-      title: title,
+      currentUser: widget.user,
+      title: widget.title,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -18,7 +26,7 @@ class ComingSoonPage extends StatelessWidget {
             Icon(Icons.construction, size: 72, color: AppColors.textGrey),
             const SizedBox(height: 16),
             Text(
-              '$title\nComing Soon',
+              '${widget.title}\nComing Soon',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontFamily: AppTypography.fontFamily,

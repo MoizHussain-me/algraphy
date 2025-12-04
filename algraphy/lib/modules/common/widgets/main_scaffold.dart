@@ -1,5 +1,6 @@
 import 'package:algraphy/config/routes/app_routes.dart';
 import 'package:algraphy/core/theme/colors.dart';
+import 'package:algraphy/modules/auth/data/models/user_model.dart';
 import 'package:flutter/material.dart';
 import 'side_menu.dart';
 
@@ -7,8 +8,9 @@ class MainScaffold extends StatefulWidget {
   final Widget body;
   final String title;
   final String currentRoute;
+  final UserModel currentUser;
 
-  const MainScaffold({super.key, required this.body, this.title = '',this.currentRoute = AppRoutes.home});
+  const MainScaffold({super.key, required this.body, this.title = '',this.currentRoute = AppRoutes.home,required this.currentUser});
 
   @override
   State<MainScaffold> createState() => _MainScaffoldState();
@@ -38,6 +40,7 @@ class _MainScaffoldState extends State<MainScaffold> {
               child: SideMenu(
                 isPersistent: true,
                 activeRoute: currentRoute,
+                currentUser: widget.currentUser,
               ),
             ),
             Expanded(
@@ -76,6 +79,7 @@ class _MainScaffoldState extends State<MainScaffold> {
           drawer: SideMenu(
             isPersistent: false,
             activeRoute: currentRoute,
+             currentUser: widget.currentUser,
           ),
           backgroundColor: AppColors.backgroundDark,
           appBar: AppBar(

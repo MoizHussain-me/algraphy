@@ -15,6 +15,7 @@ void main() async {
   await setup();
 
   final localUserRepo = getIt<LocalUserRepository>();
+  await localUserRepo.ensureAdmin();
 
   runApp(
     BlocProvider(
