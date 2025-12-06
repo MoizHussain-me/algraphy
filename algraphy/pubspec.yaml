@@ -47,6 +47,9 @@ dependencies:
   uuid: ^4.5.2
   web: ^1.1.1
   file_picker: ^10.3.7
+  http: ^0.13.6
+  universal_io: ^2.0.4
+  fl_chart: 0.66.0
 
 
 

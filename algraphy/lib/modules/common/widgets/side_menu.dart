@@ -83,10 +83,12 @@ class SideMenu extends StatelessWidget {
           ? null
           : const Icon(Icons.chevron_right, color: AppColors.textGrey),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      hoverColor: AppColors.primaryRed.withOpacity(0.06),
+      hoverColor: AppColors.primaryRed.withValues(alpha: 0.06),
       onTap: () {
-        if (!isPersistent)
-          Navigator.of(context).pop(); // close drawer if mobile
+        if (!isPersistent) {
+          Navigator.of(context).pop();
+        }
+        // close drawer if mobile
         if (routeName != activeRoute) {
           Navigator.of(context).pushNamed(routeName);
         }
@@ -116,24 +118,16 @@ class SideMenu extends StatelessWidget {
                     ),
                     _buildMenuItem(
                       context,
+                      icon: Icons.emoji_people,
+                      label: 'Employees',
+                      routeName: AppRoutes.employees,
+                    ),
+                    _buildMenuItem(
+                      context,
                       icon: Icons.people,
                       label: 'Profile',
                       routeName: AppRoutes.profile,
                     ),
-                    if (currentUser.role == 'admin') ...[
-                      _buildMenuItem(
-                        context,
-                        icon: Icons.person_add,
-                        label: 'Add Employee',
-                        routeName: AppRoutes.create_user,
-                      ),
-                      _buildMenuItem(
-                        context,
-                        icon: Icons.group,
-                        label: 'Manage Employees',
-                        routeName: AppRoutes.attendance,
-                      ),
-                    ],
                     _buildMenuItem(
                       context,
                       icon: Icons.business,
@@ -169,12 +163,6 @@ class SideMenu extends StatelessWidget {
                       icon: Icons.article,
                       label: 'Plans',
                       routeName: AppRoutes.plans,
-                    ),
-                    _buildMenuItem(
-                      context,
-                      icon: Icons.emoji_people,
-                      label: 'Employees',
-                      routeName: AppRoutes.employees,
                     ),
                     _buildMenuItem(
                       context,

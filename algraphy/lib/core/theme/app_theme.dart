@@ -8,8 +8,8 @@ class AppTheme {
     scaffoldBackgroundColor: AppColors.backgroundDark,
     canvasColor: AppColors.backgroundDark,
     primaryColor: AppColors.primaryRed,
-    splashColor: AppColors.primaryRed.withOpacity(0.15),
-    highlightColor: AppColors.primaryRed.withOpacity(0.08),
+    splashColor: AppColors.primaryRed.withValues(alpha: 0.15),
+    highlightColor: AppColors.primaryRed.withValues(alpha: 0.08),
     textTheme: AppTypography.darkTextTheme,
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.backgroundDark,

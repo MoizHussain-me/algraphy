@@ -3,7 +3,6 @@ class AppRoutes {
   static const register = '/register';
   static const login = '/login';
   static const home = '/home';
-  static const attendance = '/attendance';
   static const employees = '/employees';
   static const profile = '/profile';
   static const algraphyPro = '/algraphy-pro';
@@ -16,5 +15,7 @@ class AppRoutes {
   static const contact = '/contact';
   static const settings = '/settings';
   static const comingSoon = '/coming-soon';
-  static const create_user = '/admin_create_user';
+  static const attendanceHistory = '/attendance/history';
+  static const attendance = '/attendance';
+
 }

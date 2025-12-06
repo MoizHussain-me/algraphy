@@ -1,58 +1,58 @@
-import 'package:algraphy/modules/auth/data/models/user_model.dart';
+import 'package:algraphy/modules/auth/data/repositories/mock_data_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../data/local_user_repository.dart';
-import 'auth_event.dart';
-import 'auth_state.dart';
+import '../../data/models/user_model.dart';
 
+// --- Events ---
+abstract class AuthEvent {}
+class AppStarted extends AuthEvent {}
+class LoginRequested extends AuthEvent {
+  final String email;
+  final String password;
+  LoginRequested(this.email, this.password);
+}
+class LogoutRequested extends AuthEvent {}
+
+// --- States ---
+abstract class AuthState {}
+class AuthInitial extends AuthState {}
+class AuthLoading extends AuthState {}
+class AuthAuthenticated extends AuthState {
+  final UserModel user;
+  AuthAuthenticated(this.user);
+}
+class AuthUnauthenticated extends AuthState {}
+class AuthFailure extends AuthState {
+  final String message;
+  AuthFailure(this.message);
+}
+
+// --- Bloc ---
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final LocalUserRepository _repo;
+  final MockAuthRepository _repo;
 
   AuthBloc(this._repo) : super(AuthInitial()) {
-    // App start
     on<AppStarted>((event, emit) async {
-      // Default to unauthenticated for demo purposes
+      // For now, start unauthenticated. Later we check storage.
       emit(AuthUnauthenticated());
     });
 
-    // Registration
-    // on<RegisterRequested>((event, emit) async {
-    //   emit(AuthLoading());
-    //   try {
-    //     final user = await _repo.register(
-    //       name: event.name,
-    //       email: event.email,
-    //       password: event.password,
-    //     );
-
-    //     // Emit success
-    //     emit(AuthAuthenticated(user));
-    //   } catch (ex) {
-    //     // Only emit AuthFailure once
-    //     emit(AuthFailure(ex.toString()));
-    //   }
-    // });
-
-    // Login
     on<LoginRequested>((event, emit) async {
       emit(AuthLoading());
       try {
-        final user = await _repo.login(
-          email: event.email,
-          password: event.password,
-        );
-
+        final user = await _repo.login(event.email, event.password);
         if (user != null) {
-          emit(AuthAuthenticated(user as UserModel));
+          emit(AuthAuthenticated(user));
         } else {
-          emit(AuthFailure('Invalid credentials'));
+          emit(AuthFailure("Invalid Credentials"));
+          emit(AuthUnauthenticated());
         }
-      } catch (ex) {
-        emit(AuthFailure(ex.toString()));
+      } catch (e) {
+        emit(AuthFailure(e.toString()));
       }
     });
 
-    // Logout
     on<LogoutRequested>((event, emit) async {
+      await _repo.logout();
       emit(AuthUnauthenticated());
     });
   }

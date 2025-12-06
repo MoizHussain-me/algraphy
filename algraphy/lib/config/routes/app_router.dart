@@ -1,159 +1,170 @@
-import 'package:algraphy/modules/admin/presentation/pages/admin_create_user_page.dart';
-import 'package:algraphy/modules/attendance/presentation/pages/attendance_page.dart';
-import 'package:algraphy/modules/auth/presentation/bloc/auth_bloc.dart';
-import 'package:algraphy/modules/auth/presentation/bloc/auth_state.dart';
-import 'package:algraphy/modules/auth/presentation/pages/login_page.dart';
-import 'package:algraphy/modules/auth/presentation/pages/register_page.dart';
-import 'package:algraphy/modules/common/widgets/coming_soon_page.dart';
-import 'package:algraphy/modules/common/widgets/main_scaffold.dart';
-import 'package:algraphy/modules/profile/presentation/profile_page.dart';
+import 'package:algraphy/modules/admin/presentation/pages/employee_management_page.dart';
+import 'package:algraphy/modules/auth/presentation/pages/login.dart';
+import 'package:algraphy/modules/employee/presentation/pages/attendance_history.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+// 1. Data Models
+import '../../modules/auth/data/models/user_model.dart';
+
+// 2. Bloc & State
+import '../../modules/auth/presentation/bloc/auth_bloc.dart';
+
+// 3. Pages
+import '../../modules/employee/presentation/pages/attendance_page.dart';
+
+// 4. Common Widgets
+import '../../modules/common/widgets/main_scaffold.dart';
+import '../../modules/common/widgets/coming_soon_page.dart';
+
+// 5. Routes Constant
 import 'app_routes.dart';
 
 class AppRouter {
   static Route<dynamic> generate(RouteSettings settings) {
     switch (settings.name) {
+      // -----------------------------------------------------------------------
+      // HOME (Default Dashboard - usually Attendance)
+      // -----------------------------------------------------------------------
       case AppRoutes.home:
-        return MaterialPageRoute(
-          builder: (_) => BlocBuilder<AuthBloc, AuthState>(
-            builder: (context, state) {
-              if (state is AuthAuthenticated) {
-                return MainScaffold(
-                  title: 'Attendance',
-                  body: const AttendancePage(),
-                  currentRoute: AppRoutes.attendance, // pass explicitly
-                  currentUser: state.user,
-                );
-              } else if (state is AuthUnauthenticated) {
-                return const LoginPage();
-              } else {
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
-                );
-              }
-            },
+        return _buildProtectedPage(
+          settings: settings,
+          builder: (user) => MainScaffold(
+            title: 'Dashboard',
+            currentRoute: AppRoutes.home,
+            currentUser: user,
+            body: AttendancePage(),
           ),
         );
 
-
- case AppRoutes.create_user:
-        return MaterialPageRoute(
-          builder: (_) => BlocBuilder<AuthBloc, AuthState>(
-            builder: (context, state) {
-              if (state is AuthAuthenticated) {
-                return MainScaffold(
-                  title: 'Add Employee',
-                  body: const AdminCreateUserPage(),
-                  currentRoute: AppRoutes.create_user, // pass explicitly
-                  currentUser: state.user,
-                );
-              } else if (state is AuthUnauthenticated) {
-                return const LoginPage();
-              } else {
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
-                );
-              }
-            },
-          ),
-        );
-
-
-
+      // -----------------------------------------------------------------------
+      // ATTENDANCE
+      // -----------------------------------------------------------------------
       case AppRoutes.attendance:
-        return MaterialPageRoute(
-          builder: (_) => BlocBuilder<AuthBloc, AuthState>(
-            builder: (context, state) {
-              if (state is AuthAuthenticated) {
-                return MainScaffold(
-                  title: 'Attendance',
-                  body: const AttendancePage(),
-                  currentRoute: AppRoutes.attendance, // pass explicitly
-                  currentUser: state.user,
-                );
-              } else if (state is AuthUnauthenticated) {
-                return const LoginPage();
-              } else {
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
-                );
-              }
-            },
+        return _buildProtectedPage(
+          settings: settings,
+          builder: (user) => MainScaffold(
+            title: 'Attendance',
+            currentRoute: AppRoutes.attendance,
+            currentUser: user,
+            body: const AttendancePage(),
           ),
         );
 
-      // case AppRoutes.employees:
-      //   return MaterialPageRoute(
-      //     builder: (_) => const ComingSoonPage(title: 'Contact'),
-      //   );
+      // -----------------------------------------------------------------------
+      // ATTENDANCE
+      // -----------------------------------------------------------------------
+      case AppRoutes.attendanceHistory:
+        return _buildProtectedPage(
+          settings: settings,
+          builder: (user) => MainScaffold(
+            title: 'History',
+            currentRoute:
+                AppRoutes.attendance, // Keep 'Attendance' active in drawer
+            currentUser: user,
+            body: const AttendanceHistoryPage(),
+          ),
+        );
 
-      // case AppRoutes.profile:
-      //   return MaterialPageRoute(
-      //     builder: (_) =>  MainScaffold(
-      //       title: 'Profile',
-      //       body: const ProfilePage(),
-      //       currentRoute: AppRoutes.profile, // pass explicitly
-      //     ),
-      
-      //   );
+      // -----------------------------------------------------------------------
+      // LOGIN (Public Route - Unified)
+      // -----------------------------------------------------------------------
+      case AppRoutes.login:
+        return MaterialPageRoute(builder: (_) => LoginPage());
 
-      // case AppRoutes.chats:
-      //   return MaterialPageRoute(
-      //     builder: (_) => const ComingSoonPage(title: 'Contact'),
-      //   );
+      // -----------------------------------------------------------------------
+      // PROFILE & OTHER MENU ITEMS
+      // (Using Coming Soon to prevent errors until you build the Profile UI)
+      // -----------------------------------------------------------------------
+      case AppRoutes.profile:
+        return _buildProtectedPage(
+          settings: settings,
+          builder: (user) => MainScaffold(
+            title: 'Profile',
+            currentRoute: AppRoutes.profile,
+            currentUser: user,
+            body: const ComingSoonPage(title: "Profile"),
+          ),
+        );
 
-      // case AppRoutes.settings:
-      //   return MaterialPageRoute(
-      //     builder: (_) => const ComingSoonPage(title: 'Contact'),
-      //   );
 
-      // // Coming soon pages
-      // case AppRoutes.algraphyPro:
-      //   return MaterialPageRoute(
-      //     builder: (_) => const ComingSoonPage(title: 'Algraphy Pro'),
-      //   );
+ case AppRoutes.employees:
+        return _buildProtectedPage(
+          settings: settings,
+          builder: (user) => MainScaffold(
+            title: 'Employees',
+            currentRoute: AppRoutes.employees,
+            currentUser: user,
+            // Pass the role check here
+            body: EmployeeManagementPage(isAdmin: user.role == 'admin'),
+          ),
+        );
 
-      // case AppRoutes.about:
-      //   return MaterialPageRoute(
-      //     builder: (_) => const ComingSoonPage(title: 'About'),
-      //   );
 
-      // case AppRoutes.services:
-      //   return MaterialPageRoute(
-      //     builder: (_) => const ComingSoonPage(title: 'Services'),
-      //   );
 
-      // case AppRoutes.work:
-      //   return MaterialPageRoute(
-      //     builder: (_) => const ComingSoonPage(title: 'Work'),
-      //   );
 
-      // case AppRoutes.plans:
-      //   return MaterialPageRoute(
-      //     builder: (_) => const ComingSoonPage(title: 'Plans'),
-      //   );
 
-      // case AppRoutes.talents:
-      //   return MaterialPageRoute(
-      //     builder: (_) => const ComingSoonPage(title: 'Talents'),
-      //   );
 
-      // case AppRoutes.contact:
-      //   return MaterialPageRoute(
-      //     builder: (_) => const ComingSoonPage(title: 'Contact'),
-      //   );
+      case AppRoutes.chats:
+      case AppRoutes.settings:     
+      case AppRoutes.algraphyPro:
+      case AppRoutes.about:
+      case AppRoutes.services:
+      case AppRoutes.work:
+      case AppRoutes.plans:
+      case AppRoutes.talents:
+      case AppRoutes.contact:
+        return _buildProtectedPage(
+          settings: settings,
+          builder: (user) => MainScaffold(
+            title: _getTitleFromRoute(settings.name),
+            currentRoute: settings.name ?? '',
+            currentUser: user,
+            body: ComingSoonPage(title: _getTitleFromRoute(settings.name)),
+          ),
+        );
 
-      // case AppRoutes.register:
-      //   return MaterialPageRoute(builder: (_) => const RegisterPage());
-      // case AppRoutes.login:
-      //   return MaterialPageRoute(builder: (_) => const LoginPage());
-
+      // -----------------------------------------------------------------------
+      // 404 Not Found
+      // -----------------------------------------------------------------------
       default:
         return MaterialPageRoute(
           builder: (_) =>
               const Scaffold(body: Center(child: Text('Route not found'))),
         );
     }
+  }
+
+  // --- Helper to handle Auth Protection & User Injection ---
+  static MaterialPageRoute _buildProtectedPage({
+    required RouteSettings settings,
+    required Widget Function(UserModel user) builder,
+  }) {
+    return MaterialPageRoute(
+      settings: settings,
+      builder: (_) => BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {
+          if (state is AuthAuthenticated) {
+            // User is logged in, show the protected page
+            return builder(state.user);
+          } else if (state is AuthUnauthenticated) {
+            // Not logged in, redirect to Unified Login
+            return const LoginPage();
+          } else {
+            // Loading state (AuthInitial or AuthLoading)
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  // --- Helper to format title strings ---
+  static String _getTitleFromRoute(String? route) {
+    if (route == null) return '';
+    // Removes slash and creates a clean title (e.g., "/about" -> "ABOUT")
+    return route.replaceAll('/', '').toUpperCase();
   }
 }

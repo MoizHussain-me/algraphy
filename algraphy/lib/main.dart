@@ -1,28 +1,18 @@
-import 'package:algraphy/config/di/injector.dart';
-import 'package:algraphy/config/routes/app_router.dart';
-import 'package:algraphy/core/theme/app_theme.dart';
-import 'package:algraphy/modules/attendance/presentation/pages/attendance_page.dart';
-import 'package:algraphy/modules/auth/data/local_user_repository.dart';
-import 'package:algraphy/modules/auth/presentation/bloc/auth_bloc.dart';
-import 'package:algraphy/modules/auth/presentation/bloc/auth_event.dart';
-import 'package:algraphy/modules/auth/presentation/bloc/auth_state.dart';
-import 'package:algraphy/modules/auth/presentation/pages/login_page.dart';
+import 'package:algraphy/modules/auth/data/repositories/mock_data_repository.dart';
+import 'package:algraphy/modules/auth/presentation/pages/login.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'config/di/injector.dart';
+import 'config/routes/app_router.dart';
+import 'modules/auth/presentation/bloc/auth_bloc.dart';
+import 'modules/employee/presentation/pages/attendance_page.dart';
+import 'modules/common/widgets/main_scaffold.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await setup();
+  await setup(); // Initialize Mock DI
 
-  final localUserRepo = getIt<LocalUserRepository>();
-  await localUserRepo.ensureAdmin();
-
-  runApp(
-    BlocProvider(
-      create: (_) => AuthBloc(localUserRepo)..add(AppStarted()),
-      child: const MyApp(),
-    ),
-  );
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -30,29 +20,42 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: "Algraphy People",
-      debugShowCheckedModeBanner: true,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.dark,
-      onGenerateRoute: AppRouter.generate, // keeps routing working
-      home: BlocBuilder<AuthBloc, AuthState>(
-        builder: (context, state) {
-          if (state is AuthInitial || state is AuthLoading) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          } else if (state is AuthAuthenticated) {
-            return const AttendancePage(); // first page after login
-          } else if (state is AuthUnauthenticated) {
-            return const LoginPage(); // first page if not logged in
-          } else {
-            return const Scaffold(
-              body: Center(child: Text("Something went wrong")),
-            );
-          }
-        },
+    return BlocProvider(
+      // Get the MockRepo from GetIt and start the app
+      create: (context) => AuthBloc(getIt<MockAuthRepository>())..add(AppStarted()),
+      child: MaterialApp(
+        title: 'Algraphy People',
+        debugShowCheckedModeBanner: false,
+        
+        // Dark Theme Configuration
+        theme: ThemeData.dark().copyWith(
+          scaffoldBackgroundColor: const Color(0xFF080808),
+          primaryColor: const Color(0xFFDC2726),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFF1C1C1C),
+            elevation: 0,
+          ),
+        ),
+        
+        // Routing
+        onGenerateRoute: AppRouter.generate,
+        
+        // Initial Screen Logic (Auth Guard)
+        home: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, state) {
+            if (state is AuthAuthenticated) {
+              // User is logged in -> Show Dashboard with Attendance
+              return MainScaffold(
+                title: 'Dashboard',
+                currentUser: state.user,
+                body: const AttendancePage(), 
+              );
+            } else {
+              // User is NOT logged in -> Show Unified Login Page
+              return const LoginPage(); 
+            }
+          },
+        ),
       ),
     );
   }
