@@ -1,14 +1,17 @@
+import 'package:algraphy/modules/auth/data/models/user_model.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 class DashboardView extends StatelessWidget {
-  final bool isAdmin;
+  final UserModel currentUser; // Accepts current user
 
-  const DashboardView({super.key, this.isAdmin = false});
+  const DashboardView({super.key, required this.currentUser});
 
   @override
   Widget build(BuildContext context) {
     const Color backgroundDark = Color(0xFF080808);
+    // Check role to decide layout
+    final bool isAdmin = currentUser.role == 'admin';
     
     return Container(
       color: backgroundDark,
@@ -25,9 +28,9 @@ class DashboardView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 1. Welcome Header
-        const Text(
-          "Welcome back, Syed!",
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+        Text(
+          "Welcome back, ${currentUser.firstName}!", // Dynamic Name
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
         ),
         const SizedBox(height: 4),
         const Text(
@@ -235,8 +238,8 @@ class DashboardView extends StatelessWidget {
           mainAxisSpacing: 16,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          // FIX: Changed from 1.5 to 1.1 to give cards more height and prevent overflow
-          childAspectRatio: 1.1,
+          // Aspect Ratio 1.1 prevents overflow
+          childAspectRatio: 1.1, 
           children: children,
         );
       },
@@ -263,7 +266,6 @@ class _MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      // FIX: Reduced padding from 16 to 12 to save space
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFF1C1C1C),
@@ -279,10 +281,9 @@ class _MetricCard extends StatelessWidget {
             children: [
               Expanded(child: Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12), overflow: TextOverflow.ellipsis)),
               Container(
-                // FIX: Reduced padding from 8 to 6
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.2),
+                  color: iconColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: iconColor, size: 16),
@@ -296,7 +297,6 @@ class _MetricCard extends StatelessWidget {
                 value,
                 style: const TextStyle(
                   color: Colors.white,
-                  // FIX: Reduced font size from 24 to 20
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
@@ -343,7 +343,7 @@ class _WeeklyBarChart extends StatelessWidget {
       child: BarChart(
         BarChartData(
           alignment: BarChartAlignment.spaceAround,
-          maxY: isEmployee ? 12 : 100, // Employee max hours vs Admin max percentage/count
+          maxY: isEmployee ? 12 : 100,
           barTouchData: BarTouchData(enabled: true),
           titlesData: FlTitlesData(
             show: true,
@@ -408,7 +408,6 @@ class _WeeklyBarChart extends StatelessWidget {
   }
 
   List<BarChartGroupData> _buildAdminData() {
-    // Mock Org Data: Percentage of attendance per day
     return [
       _makeGroupData(0, 95, Colors.greenAccent, maxY: 100),
       _makeGroupData(1, 92, Colors.greenAccent, maxY: 100),
@@ -430,7 +429,7 @@ class _WeeklyBarChart extends StatelessWidget {
           backDrawRodData: BackgroundBarChartRodData(
             show: true,
             toY: maxY,
-            color: Colors.white.withOpacity(0.05),
+            color: Colors.white.withValues(alpha: 0.05),
           ),
         ),
       ],
@@ -470,7 +469,7 @@ class _ActivityItem extends StatelessWidget {
                 color: color,
                 shape: BoxShape.circle,
                 boxShadow: [
-                  BoxShadow(color: color.withOpacity(0.5), blurRadius: 6),
+                  BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 6),
                 ]
               ),
             ),

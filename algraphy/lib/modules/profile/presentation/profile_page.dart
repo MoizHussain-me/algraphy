@@ -1,159 +1,184 @@
+import 'package:algraphy/core/utils/image_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io';
+import 'package:algraphy/modules/auth/data/models/user_model.dart';
 
-class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
 
-  @override
-  State<ProfilePage> createState() => _ProfilePageState();
-}
+class ProfilePage extends StatelessWidget {
+  final UserModel user;
 
-class _ProfilePageState extends State<ProfilePage> {
-  final _formKey = GlobalKey<FormState>();
-  int _currentStep = 0;
-
-  // Controllers
-  final _firstNameCtrl = TextEditingController();
-  final _lastNameCtrl = TextEditingController();
-  final _emailCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
-  final _designationCtrl = TextEditingController();
-
-  final List<String> _steps = ['Name', 'Contact', 'Work Info'];
-
-  void _nextStep() {
-    if (_currentStep < _steps.length - 1) {
-      if (_formKey.currentState!.validate()) {
-        setState(() => _currentStep++);
-      }
-    } else {
-      if (_formKey.currentState!.validate()) {
-        // Form complete
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile Completed!')),
-        );
-      }
-    }
-  }
-
-  void _previousStep() {
-    if (_currentStep > 0) {
-      setState(() => _currentStep--);
-    }
-  }
-
-  double _progressValue() => (_currentStep + 1) / _steps.length;
-
-  Widget _stepContent() {
-    switch (_currentStep) {
-      case 0:
-        return Column(
-          children: [
-            TextFormField(
-              controller: _firstNameCtrl,
-              decoration: _inputDecoration('First Name'),
-              validator: (v) => v!.isEmpty ? 'Required' : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _lastNameCtrl,
-              decoration: _inputDecoration('Last Name'),
-              validator: (v) => v!.isEmpty ? 'Required' : null,
-            ),
-          ],
-        );
-      case 1:
-        return Column(
-          children: [
-            TextFormField(
-              controller: _emailCtrl,
-              decoration: _inputDecoration('Email'),
-              validator: (v) => v!.isEmpty ? 'Enter a valid email' : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _phoneCtrl,
-              decoration: _inputDecoration('Phone Number'),
-              validator: (v) => v!.isEmpty ? 'Enter a valid phone' : null,
-            ),
-          ],
-        );
-      case 2:
-        return Column(
-          children: [
-            TextFormField(
-              controller: _designationCtrl,
-              decoration: _inputDecoration('Designation'),
-              validator: (v) => v!.isEmpty ? 'Enter your designation' : null,
-            ),
-          ],
-        );
-      default:
-        return const SizedBox.shrink();
-    }
-  }
-
-  InputDecoration _inputDecoration(String label) => InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.white70),
-        filled: true,
-        fillColor: Colors.grey[900],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      );
+  const ProfilePage({super.key, required this.user});
 
   @override
   Widget build(BuildContext context) {
+    const Color backgroundDark = Color(0xFF080808);
+    const Color cardColor = Color(0xFF1C1C1C);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF080808),
-      appBar: AppBar(
-        title: const Text('Complete Your Profile'),
-        backgroundColor: Colors.black87,
-      ),
-      body: Padding(
+      backgroundColor: backgroundDark,
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Top Progress Bar
-            LinearProgressIndicator(
-              value: _progressValue(),
-              backgroundColor: Colors.grey[800],
-              valueColor: const AlwaysStoppedAnimation(Colors.blueAccent),
-            ),
-            const SizedBox(height: 24),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Form(
-                  key: _formKey,
-                  child: _stepContent(),
-                ),
+            // 1. Profile Header Card
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: cardColor,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white10),
+              ),
+              child: Column(
+                children: [
+                  // Avatar
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundColor: Colors.grey[800],
+                    backgroundImage: NetworkImage(ImageHelper.getFullUrl(user.profilePicture)),
+                    // backgroundImage: _getProfileImage(user.profilePicture),
+                    child: user.profilePicture == null
+                        ? Text(
+                            user.firstName?[0] ?? "U",
+                            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+                          )
+                        : null,
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Name & Designation
+                  Text(
+                    user.fullName,
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "${user.designation ?? 'No Designation'} • ${user.department ?? 'No Dept'}",
+                    style: const TextStyle(color: Colors.grey, fontSize: 14),
+                  ),
+                  const SizedBox(height: 8),
+                  
+                  // Status Badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.green),
+                    ),
+                    child: Text(
+                      user.employeeStatus ?? "Active",
+                      style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+            const SizedBox(height: 24),
+
+            // 2. Info Sections
+            _buildSection(
+              title: "Work Information",
               children: [
-                if (_currentStep > 0)
-                  OutlinedButton(
-                    onPressed: _previousStep,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.white70),
-                    ),
-                    child: const Text('Back'),
-                  ),
-                ElevatedButton(
-                  onPressed: _nextStep,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                  ),
-                  child: Text(
-                      _currentStep == _steps.length - 1 ? 'Finish' : 'Next'),
+                _buildInfoRow(Icons.badge, "Employee ID", user.employeeId ?? "-"),
+                _buildInfoRow(Icons.email, "Work Email", user.email),
+                _buildInfoRow(Icons.calendar_today, "Date of Joining", user.dateOfJoining ?? "-"),
+                _buildInfoRow(Icons.timer, "Employment Type", user.employmentType ?? "-"),
+                _buildInfoRow(Icons.supervisor_account, "Reporting Manager", user.reportingManager ?? "-"), // Shows ID, needs name lookup later
+                _buildInfoRow(Icons.location_on, "Office Location", user.location ?? "-"),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            _buildSection(
+              title: "Contact Details",
+              children: [
+                _buildInfoRow(Icons.phone_iphone, "Mobile", user.personalMobileNumber ?? "-"),
+                _buildInfoRow(Icons.phone, "Work Phone", user.workPhoneNumber ?? "-"),
+                _buildInfoRow(Icons.email_outlined, "Personal Email", user.personalEmailAddress ?? "-"),
+                _buildInfoRow(Icons.chair, "Seating Location", user.seatingLocation ?? "-"),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            _buildSection(
+              title: "Personal Information",
+              children: [
+                _buildInfoRow(Icons.cake, "Date of Birth", user.dateOfBirth ?? "-"),
+                _buildInfoRow(Icons.person, "Gender", user.gender ?? "-"),
+                _buildInfoRow(Icons.family_restroom, "Marital Status", user.maritalStatus ?? "-"),
+                _buildInfoRow(Icons.account_balance, "IBAN", user.iban ?? "-"),
+              ],
+            ),
+            
+            const SizedBox(height: 40),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- Helper Methods ---
+
+  ImageProvider? _getProfileImage(String? path) {
+    if (path == null || path.isEmpty) return null;
+    // NOTE: In production, prepend your Base URL here (e.g. https://your-site.com/algraphy_api/)
+    // For local testing on emulator, you might need 'http://10.0.2.2/...'
+    if (kIsWeb) {
+      return NetworkImage(path); 
+    } else {
+      // If path is a local file (from admin preview)
+      if (!path.startsWith('http')) return FileImage(File(path));
+      return NetworkImage(path);
+    }
+  }
+
+  Widget _buildSection({required String title, required List<Widget> children}) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C1C1C),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(color: Color(0xFFDC2726), fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.grey, size: 20),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'package:algraphy/modules/auth/presentation/pages/change_password_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../config/routes/app_routes.dart';
@@ -19,13 +20,19 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF080808), 
+      backgroundColor: const Color(0xFF080808),
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthAuthenticated) {
-            // FIX: Redirect EVERYONE to Home (Dashboard).
-            // Admin/Employee differences are now handled by the SideMenu/Drawer.
-            Navigator.of(context).pushReplacementNamed(AppRoutes.home);
+            if (state.user.mustChangePassword) {
+              // 🛑 STOP! Force password change
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const ChangePasswordPage()),
+              );
+            } else {
+              // ✅ Good to go
+              Navigator.of(context).pushReplacementNamed(AppRoutes.home);
+            }
           } else if (state is AuthFailure) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -51,7 +58,22 @@ class _LoginPageState extends State<LoginPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Icon(Icons.lock_person, size: 80, color: Colors.grey[700]),
+                      Hero(
+                        tag: 'app_logo',
+                        child: Image.asset(
+                          'assets/images/logo.png', // Ensure this file exists
+                          height: 100, // Adjust size as needed
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            // Fallback if image not found
+                            return Icon(
+                              Icons.lock_person,
+                              size: 80,
+                              color: Colors.grey[700],
+                            );
+                          },
+                        ),
+                      ),
                       const SizedBox(height: 24),
                       const Text(
                         'Welcome Back',
@@ -79,20 +101,20 @@ class _LoginPageState extends State<LoginPage> {
                         style: const TextStyle(color: Colors.white),
                         decoration: _inputDecoration('Password', Icons.lock)
                             .copyWith(
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _isPasswordVisible
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
-                              color: Colors.grey,
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _isPasswordVisible
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
+                                  color: Colors.grey,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _isPasswordVisible = !_isPasswordVisible;
+                                  });
+                                },
+                              ),
                             ),
-                            onPressed: () {
-                              setState(() {
-                                _isPasswordVisible = !_isPasswordVisible;
-                              });
-                            },
-                          ),
-                        ),
                         validator: (value) =>
                             value!.isEmpty ? 'Enter password' : null,
                       ),
@@ -109,11 +131,11 @@ class _LoginPageState extends State<LoginPage> {
                         onPressed: () {
                           if (_formKey.currentState!.validate()) {
                             context.read<AuthBloc>().add(
-                                  LoginRequested(
-                                    _emailController.text.trim(),
-                                    _passwordController.text,
-                                  ),
-                                );
+                              LoginRequested(
+                                _emailController.text.trim(),
+                                _passwordController.text,
+                              ),
+                            );
                           }
                         },
                         child: const Text(

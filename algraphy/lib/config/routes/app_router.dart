@@ -1,23 +1,14 @@
 import 'package:algraphy/modules/admin/presentation/pages/employee_management_page.dart';
 import 'package:algraphy/modules/auth/presentation/pages/login.dart';
 import 'package:algraphy/modules/employee/presentation/pages/attendance_history.dart';
+import 'package:algraphy/modules/profile/presentation/profile_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-// 1. Data Models
 import '../../modules/auth/data/models/user_model.dart';
-
-// 2. Bloc & State
 import '../../modules/auth/presentation/bloc/auth_bloc.dart';
-
-// 3. Pages
 import '../../modules/employee/presentation/pages/attendance_page.dart';
-
-// 4. Common Widgets
 import '../../modules/common/widgets/main_scaffold.dart';
 import '../../modules/common/widgets/coming_soon_page.dart';
-
-// 5. Routes Constant
 import 'app_routes.dart';
 
 class AppRouter {
@@ -33,7 +24,7 @@ class AppRouter {
             title: 'Dashboard',
             currentRoute: AppRoutes.home,
             currentUser: user,
-            body: AttendancePage(),
+            body: AttendancePage(currentUser: user,),
           ),
         );
 
@@ -47,7 +38,7 @@ class AppRouter {
             title: 'Attendance',
             currentRoute: AppRoutes.attendance,
             currentUser: user,
-            body: const AttendancePage(),
+            body: AttendancePage(currentUser: user,),
           ),
         );
 
@@ -83,7 +74,7 @@ class AppRouter {
             title: 'Profile',
             currentRoute: AppRoutes.profile,
             currentUser: user,
-            body: const ComingSoonPage(title: "Profile"),
+            body: ProfilePage(user: user,),
           ),
         );
 

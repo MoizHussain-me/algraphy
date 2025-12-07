@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb; // 1. Import Platform Check
+import 'package:flutter/foundation.dart' show kIsWeb; 
 import '../views/registration_stepper_view.dart';
 import '../../../../modules/common/widgets/coming_soon_page.dart';
+import 'all_employees_page.dart'; // Import the new page
 
 class EmployeeManagementPage extends StatefulWidget {
   final bool isAdmin;
@@ -85,16 +86,15 @@ class _EmployeeManagementPageState extends State<EmployeeManagementPage> with Si
 
   List<Widget> _buildTabViews() {
     List<Widget> views = [
-      const ComingSoonPage(title: "Employee Directory"),
+      // Tab 1: Directory (Real List)
+      const AllEmployeesPage(), 
     ];
 
     if (widget.isAdmin) {
-      // 2. Platform Check Logic
+      // Tab 2: Onboarding
       if (kIsWeb) {
-        // Web: Show the full Stepper
         views.add(const RegistrationStepperView()); 
       } else {
-        // Mobile: Show Restricted Message
         views.add(const _MobileOnboardingRestrictedView());
       }
       
@@ -108,7 +108,7 @@ class _EmployeeManagementPageState extends State<EmployeeManagementPage> with Si
   }
 }
 
-// --- 3. New Restricted View Widget ---
+// --- Restricted View Widget ---
 class _MobileOnboardingRestrictedView extends StatelessWidget {
   const _MobileOnboardingRestrictedView();
 
@@ -140,18 +140,6 @@ class _MobileOnboardingRestrictedView extends StatelessWidget {
                 height: 1.5,
               ),
             ),
-            const SizedBox(height: 32),
-            OutlinedButton.icon(
-              onPressed: () {
-                // Optional: Link to web url or instructions
-              },
-              icon: const Icon(Icons.info_outline),
-              label: const Text("Read Guidelines"),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
-                side: const BorderSide(color: Colors.white24),
-              ),
-            )
           ],
         ),
       ),

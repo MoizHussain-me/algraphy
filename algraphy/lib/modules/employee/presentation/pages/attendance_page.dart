@@ -1,11 +1,14 @@
+import 'package:algraphy/modules/auth/data/models/user_model.dart';
 import 'package:algraphy/modules/common/widgets/coming_soon_page.dart';
 import 'package:algraphy/modules/employee/presentation/pages/attendance_history.dart';
 import 'package:algraphy/modules/employee/presentation/views/dashboard_view.dart';
+import 'package:algraphy/modules/profile/presentation/profile_page.dart';
 import 'package:flutter/material.dart';
 import '../views/attendance_timer_view.dart';
 
 class AttendancePage extends StatefulWidget {
-  const AttendancePage({super.key});
+  final UserModel currentUser;
+  const AttendancePage({super.key,required this.currentUser});
 
   @override
   State<AttendancePage> createState() => _AttendancePageState();
@@ -13,8 +16,7 @@ class AttendancePage extends StatefulWidget {
 
 class _AttendancePageState extends State<AttendancePage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-
-  // Tabs list
+    // Tabs list
   final List<String> _tabs = [
     "Dashboard",
     "Activities",
@@ -72,13 +74,13 @@ class _AttendancePageState extends State<AttendancePage> with SingleTickerProvid
             controller: _tabController,
             children: [
               
-              const DashboardView(),
+              DashboardView(currentUser: widget.currentUser,),
               // Tab 2: Activities (Timer)
               const AttendanceTimerView(),
               const AttendanceHistoryPage(),
               // Other Tabs
               const ComingSoonPage(title: "Feeds"),
-              const ComingSoonPage(title: "My Profile"),
+              ProfilePage(user: widget.currentUser),
               const ComingSoonPage(title: "Approvals"),
             ],
           ),

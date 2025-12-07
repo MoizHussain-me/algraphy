@@ -47,7 +47,7 @@ dependencies:
   uuid: ^4.5.2
   web: ^1.1.1
   file_picker: ^10.3.7
-  http: ^0.13.6
+  http: ^1.6.0
   universal_io: ^2.0.4
   fl_chart: 0.66.0
 
@@ -66,6 +66,7 @@ dev_dependencies:
   build_runner: ^2.4.8
   freezed: ^2.4.7
   json_serializable: ^6.8.0
+  flutter_launcher_icons: ^0.13.1 # Add this
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -77,6 +78,8 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  assets:
+    - assets/images/  # <--- Add this line
 
   # To add assets to your application, add an assets section, like this:
   # assets:
@@ -108,3 +111,13 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/logo.png" # Your logo path
+  min_sdk_android: 21
+  web:
+    generate: true
+    image_path: "assets/images/logo.png"
+    background_color: "#080808"
+    theme_color: "#DC2726"

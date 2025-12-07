@@ -1,4 +1,4 @@
-import 'package:algraphy/modules/auth/data/repositories/mock_data_repository.dart';
+import 'package:algraphy/modules/auth/data/auth_repository.dart';
 import 'package:algraphy/modules/auth/presentation/pages/login.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       // Get the MockRepo from GetIt and start the app
-      create: (context) => AuthBloc(getIt<MockAuthRepository>())..add(AppStarted()),
+      create: (context) => AuthBloc(getIt<AuthRepository>())..add(AppStarted()),
       child: MaterialApp(
         title: 'Algraphy People',
         debugShowCheckedModeBanner: false,
@@ -48,7 +48,7 @@ class MyApp extends StatelessWidget {
               return MainScaffold(
                 title: 'Dashboard',
                 currentUser: state.user,
-                body: const AttendancePage(), 
+                body: AttendancePage(currentUser:  state.user), 
               );
             } else {
               // User is NOT logged in -> Show Unified Login Page

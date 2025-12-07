@@ -1,4 +1,4 @@
-import 'package:algraphy/modules/auth/data/repositories/mock_data_repository.dart';
+import 'package:algraphy/modules/auth/data/auth_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/models/user_model.dart';
 
@@ -28,7 +28,7 @@ class AuthFailure extends AuthState {
 
 // --- Bloc ---
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final MockAuthRepository _repo;
+  final AuthRepository _repo;
 
   AuthBloc(this._repo) : super(AuthInitial()) {
     on<AppStarted>((event, emit) async {
@@ -40,13 +40,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthLoading());
       try {
         final user = await _repo.login(event.email, event.password);
-        if (user != null) {
-          emit(AuthAuthenticated(user));
-        } else {
-          emit(AuthFailure("Invalid Credentials"));
-          emit(AuthUnauthenticated());
-        }
-      } catch (e) {
+        emit(AuthAuthenticated(user));
+            } catch (e) {
         emit(AuthFailure(e.toString()));
       }
     });
