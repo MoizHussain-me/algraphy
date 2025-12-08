@@ -30,15 +30,23 @@ class ApiClient {
   }
 
   // --- 2. POST Request (JSON) ---
-  Future<Map<String, dynamic>> post(String action, Map<String, dynamic> body) async {
+ Future<Map<String, dynamic>> post(String action, Map<String, dynamic> body, {String? token}) async {
     final uri = Uri.parse('$baseUrl?action=$action');
+    
+    final headers = {
+      "Content-Type": "application/json", 
+      "Accept": "application/json"
+    };
+
+    // Add Token if provided
+    if (token != null) {
+      headers["Authorization"] = "Bearer $token";
+    }
+
     try {
       final response = await http.post(
         uri,
-        headers: {
-          "Content-Type": "application/json", 
-          "Accept": "application/json"
-        },
+        headers: headers,
         body: jsonEncode(body),
       );
       return _handleResponse(response);

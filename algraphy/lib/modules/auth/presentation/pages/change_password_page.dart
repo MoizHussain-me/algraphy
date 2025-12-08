@@ -1,3 +1,4 @@
+import 'package:algraphy/modules/auth/presentation/bloc/auth_event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/auth_bloc.dart';
@@ -91,13 +92,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     ),
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
-                        // Trigger Event
-                        // You will need to add 'ChangePasswordRequested' to your AuthBloc
-                        // context.read<AuthBloc>().add(ChangePasswordRequested(_newPassCtrl.text));
-                        
-                        // Temporary simulation:
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Feature needs API connection")),
+                        context.read<AuthBloc>().add(
+                              ChangePasswordRequested(_newPassCtrl.text.trim())
+                            
                         );
                       }
                     },

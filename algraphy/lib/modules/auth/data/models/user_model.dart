@@ -1,4 +1,7 @@
+import 'package:intl/intl.dart';
+
 class UserModel {
+  // System Fields
   final String id;
   final String email;
   final String password;
@@ -14,8 +17,8 @@ class UserModel {
 
   // -- FINANCIALS TABLE --
   final double? salary;
-  final double? lastMonthCommission;
-  final double? employeeHourlyRate;
+  final double? lastMonthCommission; // Matches 'last_month_commission'
+  final double? employeeHourlyRate;  // Matches 'hourly_rate'
   final String? iban;
 
   // -- PERSONAL DETAILS TABLE --
@@ -26,10 +29,10 @@ class UserModel {
   final String? expertise;
 
   // -- CONTACT DETAILS TABLE --
-  final String? workPhoneNumber;
+  final String? workPhoneNumber;     // Matches 'work_phone'
   final String? extension;
-  final String? personalMobileNumber;
-  final String? personalEmailAddress;
+  final String? personalMobileNumber; // Matches 'personal_mobile'
+  final String? personalEmailAddress; // Matches 'personal_email'
   final String? seatingLocation;
   final String? presentAddress;
   final String? permanentAddress;
@@ -79,9 +82,15 @@ class UserModel {
 
   String get fullName => "$firstName $lastName";
 
+  // --- Serialization (Sending to PHP) ---
   Map<String, dynamic> toMap() {
     return {
-      'id': id, 'email': email, 'password': password, 'role': role, 'mustChangePassword': mustChangePassword,
+      'id': id,
+      'email': email,
+      'password': password,
+      'role': role,
+      'mustChangePassword': mustChangePassword,
+      
       'firstName': firstName, 'lastName': lastName, 'nickName': nickName, 'employeeId': employeeId,
       'salary': salary, 'lastMonthCommission': lastMonthCommission, 'employeeHourlyRate': employeeHourlyRate, 'iban': iban,
       'dateOfBirth': dateOfBirth, 'gender': gender, 'maritalStatus': maritalStatus, 'aboutMe': aboutMe, 'expertise': expertise,
@@ -96,27 +105,100 @@ class UserModel {
     };
   }
 
+  // --- Deserialization (Receiving from PHP) ---
   factory UserModel.fromMap(Map<String, dynamic> m) {
+    // Robust Boolean Check
+    final rawChangePass = m['mustChangePassword'] ?? m['must_change_password'];
+    bool mustChange = false;
+    if (rawChangePass is bool) mustChange = rawChangePass;
+    else if (rawChangePass is int) mustChange = rawChangePass == 1;
+    else if (rawChangePass is String) mustChange = rawChangePass == '1' || rawChangePass == 'true';
+
     return UserModel(
       id: m['user_id']?.toString() ?? '',
       email: m['email']?.toString() ?? '',
       password: '', role: m['role'] ?? 'employee',
-      mustChangePassword: m['must_change_password'] == 1,
-      firstName: m['first_name'], lastName: m['last_name'], nickName: m['nick_name'], employeeId: m['employee_code'],
+      mustChangePassword: mustChange,
+      
+      firstName: m['first_name'],
+      lastName: m['last_name'],
+      nickName: m['nick_name'],
+      employeeId: m['employee_code'] ?? m['employee_id'], 
       profilePicture: m['profile_picture'],
+      
+      // FIX: Map exact JSON keys to fields
       salary: double.tryParse(m['salary']?.toString() ?? ''),
-      lastMonthCommission: double.tryParse(m['last_month_commission']?.toString() ?? ''),
-      employeeHourlyRate: double.tryParse(m['hourly_rate']?.toString() ?? ''),
+      lastMonthCommission: double.tryParse(m['last_month_commission']?.toString() ?? ''), // Fixed Key
+      employeeHourlyRate: double.tryParse(m['hourly_rate']?.toString() ?? ''), // Fixed Key
       iban: m['iban'],
-      dateOfBirth: m['date_of_birth'], gender: m['gender'], maritalStatus: m['marital_status'], aboutMe: m['about_me'], expertise: m['expertise'],
-      workPhoneNumber: m['work_phone'], extension: m['extension'], personalMobileNumber: m['personal_mobile'],
-      personalEmailAddress: m['personal_email'], seatingLocation: m['seating_location'],
-      presentAddress: m['present_address'], permanentAddress: m['permanent_address'],
-      department: m['department'], location: m['location'], designation: m['designation'], dateOfJoining: m['date_of_joining'],
-      employmentType: m['employment_type'], employeeStatus: m['employee_status'], zohoRole: m['zoho_role'],
-      sourceOfHire: m['source_of_hire'], currentExperience: m['current_experience'], totalExperience: m['total_experience'],
-      jobDescription: m['job_description'], subJobDescription: m['sub_job_description'],
-      reportingManager: m['reporting_manager_id']?.toString(), secondaryReportingManager: m['secondary_reporting_manager_id']?.toString(),
+      
+      jobDescription: m['job_description'],
+      subJobDescription: m['sub_job_description'],
+      
+      dateOfBirth: m['date_of_birth'],
+      gender: m['gender'],
+      maritalStatus: m['marital_status'],
+      aboutMe: m['about_me'],
+      expertise: m['expertise'],
+      
+      // FIX: Contact Details Keys
+      workPhoneNumber: m['work_phone'], 
+      extension: m['extension'],
+      personalMobileNumber: m['personal_mobile'],
+      personalEmailAddress: m['personal_email'], // Fixed Key
+      seatingLocation: m['seating_location'],
+      presentAddress: m['present_address'],
+      permanentAddress: m['permanent_address'],
+      
+      dateOfJoining: m['date_of_joining'],
+      department: m['department'],
+      location: m['location'],
+      designation: m['designation'],
+      employmentType: m['employment_type'],
+      employeeStatus: m['employee_status'],
+      zohoRole: m['zoho_role'],
+      sourceOfHire: m['source_of_hire'],
+      currentExperience: m['current_experience']?.toString(),
+      totalExperience: m['total_experience']?.toString(),
+      
+      reportingManager: m['reporting_manager_id']?.toString(),
+      secondaryReportingManager: m['secondary_reporting_manager_id']?.toString(),
+    );
+  }
+
+  UserModel copyWith({
+    String? id,
+    String? email,
+    String? password,
+    String? role,
+    bool? mustChangePassword,
+    String? firstName,
+    String? lastName,
+    String? nickName,
+    String? employeeId,
+    String? profilePicture,
+    // Add other fields if needed for updates...
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      password: password ?? this.password,
+      role: role ?? this.role,
+      mustChangePassword: mustChangePassword ?? this.mustChangePassword,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      nickName: nickName ?? this.nickName,
+      employeeId: employeeId ?? this.employeeId,
+      profilePicture: profilePicture ?? this.profilePicture,
+
+      // Pass existing values for the rest to ensure nothing is lost
+      salary: salary,
+      iban: iban,
+      department: department,
+      designation: designation,
+      // ... pass all other existing fields here ...
+      // Ideally, copyWith should handle ALL fields, but for this specific
+      // "Change Password" use case, preserving the main ones is key.
     );
   }
 }

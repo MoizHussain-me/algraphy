@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io';
 import 'package:algraphy/modules/auth/data/models/user_model.dart';
 
-
 class ProfilePage extends StatelessWidget {
   final UserModel user;
 
@@ -35,21 +34,34 @@ class ProfilePage extends StatelessWidget {
                   CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.grey[800],
-                    backgroundImage: NetworkImage(ImageHelper.getFullUrl(user.profilePicture)),
-                    // backgroundImage: _getProfileImage(user.profilePicture),
+                    // FIX: Wrap the path with ImageHelper.getFullUrl
+                    backgroundImage:
+                        user.profilePicture != null &&
+                            user.profilePicture!.isNotEmpty
+                        ? NetworkImage(
+                            ImageHelper.getFullUrl(user.profilePicture),
+                          )
+                        : null,
                     child: user.profilePicture == null
                         ? Text(
                             user.firstName?[0] ?? "U",
-                            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+                            style: const TextStyle(
+                              fontSize: 32,
+                              color: Colors.white,
+                            ),
                           )
                         : null,
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Name & Designation
                   Text(
                     user.fullName,
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -57,10 +69,13 @@ class ProfilePage extends StatelessWidget {
                     style: const TextStyle(color: Colors.grey, fontSize: 14),
                   ),
                   const SizedBox(height: 8),
-                  
+
                   // Status Badge
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.green.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
@@ -68,7 +83,11 @@ class ProfilePage extends StatelessWidget {
                     ),
                     child: Text(
                       user.employeeStatus ?? "Active",
-                      style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        color: Colors.green,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
@@ -81,12 +100,32 @@ class ProfilePage extends StatelessWidget {
             _buildSection(
               title: "Work Information",
               children: [
-                _buildInfoRow(Icons.badge, "Employee ID", user.employeeId ?? "-"),
+                _buildInfoRow(
+                  Icons.badge,
+                  "Employee ID",
+                  user.employeeId ?? "-",
+                ),
                 _buildInfoRow(Icons.email, "Work Email", user.email),
-                _buildInfoRow(Icons.calendar_today, "Date of Joining", user.dateOfJoining ?? "-"),
-                _buildInfoRow(Icons.timer, "Employment Type", user.employmentType ?? "-"),
-                _buildInfoRow(Icons.supervisor_account, "Reporting Manager", user.reportingManager ?? "-"), // Shows ID, needs name lookup later
-                _buildInfoRow(Icons.location_on, "Office Location", user.location ?? "-"),
+                _buildInfoRow(
+                  Icons.calendar_today,
+                  "Date of Joining",
+                  user.dateOfJoining ?? "-",
+                ),
+                _buildInfoRow(
+                  Icons.timer,
+                  "Employment Type",
+                  user.employmentType ?? "-",
+                ),
+                _buildInfoRow(
+                  Icons.supervisor_account,
+                  "Reporting Manager",
+                  user.reportingManager ?? "-",
+                ), // Shows ID, needs name lookup later
+                _buildInfoRow(
+                  Icons.location_on,
+                  "Office Location",
+                  user.location ?? "-",
+                ),
               ],
             ),
 
@@ -95,10 +134,26 @@ class ProfilePage extends StatelessWidget {
             _buildSection(
               title: "Contact Details",
               children: [
-                _buildInfoRow(Icons.phone_iphone, "Mobile", user.personalMobileNumber ?? "-"),
-                _buildInfoRow(Icons.phone, "Work Phone", user.workPhoneNumber ?? "-"),
-                _buildInfoRow(Icons.email_outlined, "Personal Email", user.personalEmailAddress ?? "-"),
-                _buildInfoRow(Icons.chair, "Seating Location", user.seatingLocation ?? "-"),
+                _buildInfoRow(
+                  Icons.phone_iphone,
+                  "Mobile",
+                  user.personalMobileNumber ?? "-",
+                ),
+                _buildInfoRow(
+                  Icons.phone,
+                  "Work Phone",
+                  user.workPhoneNumber ?? "-",
+                ),
+                _buildInfoRow(
+                  Icons.email_outlined,
+                  "Personal Email",
+                  user.personalEmailAddress ?? "-",
+                ),
+                _buildInfoRow(
+                  Icons.chair,
+                  "Seating Location",
+                  user.seatingLocation ?? "-",
+                ),
               ],
             ),
 
@@ -107,13 +162,21 @@ class ProfilePage extends StatelessWidget {
             _buildSection(
               title: "Personal Information",
               children: [
-                _buildInfoRow(Icons.cake, "Date of Birth", user.dateOfBirth ?? "-"),
+                _buildInfoRow(
+                  Icons.cake,
+                  "Date of Birth",
+                  user.dateOfBirth ?? "-",
+                ),
                 _buildInfoRow(Icons.person, "Gender", user.gender ?? "-"),
-                _buildInfoRow(Icons.family_restroom, "Marital Status", user.maritalStatus ?? "-"),
+                _buildInfoRow(
+                  Icons.family_restroom,
+                  "Marital Status",
+                  user.maritalStatus ?? "-",
+                ),
                 _buildInfoRow(Icons.account_balance, "IBAN", user.iban ?? "-"),
               ],
             ),
-            
+
             const SizedBox(height: 40),
           ],
         ),
@@ -128,7 +191,7 @@ class ProfilePage extends StatelessWidget {
     // NOTE: In production, prepend your Base URL here (e.g. https://your-site.com/algraphy_api/)
     // For local testing on emulator, you might need 'http://10.0.2.2/...'
     if (kIsWeb) {
-      return NetworkImage(path); 
+      return NetworkImage(path);
     } else {
       // If path is a local file (from admin preview)
       if (!path.startsWith('http')) return FileImage(File(path));
@@ -136,7 +199,10 @@ class ProfilePage extends StatelessWidget {
     }
   }
 
-  Widget _buildSection({required String title, required List<Widget> children}) {
+  Widget _buildSection({
+    required String title,
+    required List<Widget> children,
+  }) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -148,7 +214,11 @@ class ProfilePage extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(color: Color(0xFFDC2726), fontSize: 16, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Color(0xFFDC2726),
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 16),
           ...children,
@@ -168,11 +238,18 @@ class ProfilePage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(
+                  label,
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ],

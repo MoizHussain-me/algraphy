@@ -17,4 +17,10 @@ class LoginRequested extends AuthEvent {
   LoginRequested(this.email, this.password);
 }
 
+
+class ChangePasswordRequested extends AuthEvent {
+  final String newPassword;
+  ChangePasswordRequested(this.newPassword);
+}
+
 class LogoutRequested extends AuthEvent {}

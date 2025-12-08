@@ -3,15 +3,15 @@ import 'package:algraphy/modules/auth/data/models/user_model.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:get_it/get_it.dart'; 
+import 'dart:typed_data';
 import 'dart:io' as io;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-
+import '../../../../core/utils/image_helper.dart'; // Ensure ImageHelper is imported
 
 class RegistrationStepperView extends StatefulWidget {
-  final UserModel? userToEdit; // NEW: Accept user for editing
-
+  final UserModel? userToEdit; 
   const RegistrationStepperView({super.key, this.userToEdit});
 
   @override
@@ -29,6 +29,8 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
   List<UserModel> _employeeList = []; 
   bool _isLoadingData = true;
 
+  // --- CONTROLLERS ---
+  
   // Work
   String? _selectedDepartment;
   final _locationCtrl = TextEditingController();
@@ -53,6 +55,7 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
   // Financials
   final _salaryCtrl = TextEditingController();
   final _lastMonthCommCtrl = TextEditingController(); 
+  final _hourlyRateCtrl = TextEditingController(); 
   final _ibanCtrl = TextEditingController();
 
   // Hierarchy
@@ -76,6 +79,7 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
   final _presentAddressCtrl = TextEditingController();
   final _permanentAddressCtrl = TextEditingController(); 
 
+  // Image
   String? _profilePicPath;
   Uint8List? _profilePicBytes;
 
@@ -83,50 +87,6 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
   void initState() {
     super.initState();
     _fetchInitialData();
-    // NEW: Prefill data if editing
-    if (widget.userToEdit != null) {
-      _prefillUserData(widget.userToEdit!);
-    }
-  }
-
-  void _prefillUserData(UserModel user) {
-    // Basic
-    _empIdCtrl.text = user.employeeId ?? '';
-    _firstNameCtrl.text = user.firstName ?? '';
-    _lastNameCtrl.text = user.lastName ?? '';
-    _nickNameCtrl.text = user.nickName ?? '';
-    _emailCtrl.text = user.email;
-    
-    // Financials
-    _salaryCtrl.text = user.salary?.toString() ?? '';
-    _ibanCtrl.text = user.iban ?? '';
-    
-    // Work
-    // Note: Dropdown values must exist in the lists fetched from API or they won't show
-    _selectedDepartment = user.department; 
-    _locationCtrl.text = user.location ?? '';
-    _designationCtrl.text = user.designation ?? '';
-    _dojCtrl.text = user.dateOfJoining ?? '';
-    _employmentType = user.employmentType;
-    _employeeStatus = user.employeeStatus;
-    
-    // Personal
-    _dobCtrl.text = user.dateOfBirth ?? '';
-    _gender = user.gender ?? "Male";
-    _maritalStatus = user.maritalStatus;
-    _aboutMeCtrl.text = user.aboutMe ?? '';
-    
-    // Contact
-    _workPhoneCtrl.text = user.workPhoneNumber ?? '';
-    _personalMobileCtrl.text = user.personalMobileNumber ?? '';
-    _seatingLocationCtrl.text = user.seatingLocation ?? '';
-    
-    // Hierarchy
-    _selectedReportingManagerId = user.reportingManager;
-    _selectedSecondaryManagerId = user.secondaryReportingManager;
-    
-    // Handle Image (If URL exists)
-    _profilePicPath = user.profilePicture;
   }
 
   Future<void> _fetchInitialData() async {
@@ -143,11 +103,68 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
           _employeeList = results[1] as List<UserModel>;
           _isLoadingData = false;
         });
+        
+        // PREFILL IF EDITING
+        if (widget.userToEdit != null) {
+          _prefillUserData(widget.userToEdit!);
+        }
       }
     } catch (e) {
       debugPrint("Error loading data: $e");
       if (mounted) setState(() => _isLoadingData = false);
     }
+  }
+
+  // --- FIX: Pre-fill ALL Fields ---
+  void _prefillUserData(UserModel user) {
+    // Basic
+    _firstNameCtrl.text = user.firstName ?? '';
+    _lastNameCtrl.text = user.lastName ?? '';
+    _nickNameCtrl.text = user.nickName ?? '';
+    _empIdCtrl.text = user.employeeId ?? '';
+    _emailCtrl.text = user.email;
+    _jobDescCtrl.text = user.jobDescription ?? '';       
+    _subJobDescCtrl.text = user.subJobDescription ?? ''; 
+
+    // Financials
+    _salaryCtrl.text = user.salary?.toString() ?? '';
+    _lastMonthCommCtrl.text = user.lastMonthCommission?.toString() ?? ''; 
+    _hourlyRateCtrl.text = user.employeeHourlyRate?.toString() ?? '';     
+    _ibanCtrl.text = user.iban ?? '';
+
+    // Work
+    if (_departments.contains(user.department)) _selectedDepartment = user.department;
+    _locationCtrl.text = user.location ?? '';
+    _designationCtrl.text = user.designation ?? '';
+    _dojCtrl.text = user.dateOfJoining ?? '';
+    _employmentType = user.employmentType;
+    _employeeStatus = user.employeeStatus;
+    _zohoRole = user.zohoRole;
+    _sourceOfHireCtrl.text = user.sourceOfHire ?? '';
+    _currExpCtrl.text = user.currentExperience ?? '';
+    _totalExpCtrl.text = user.totalExperience ?? '';
+
+    // Personal
+    _dobCtrl.text = user.dateOfBirth ?? '';
+    _gender = user.gender ?? "Male";
+    _maritalStatus = user.maritalStatus;
+    _aboutMeCtrl.text = user.aboutMe ?? '';
+    _expertiseCtrl.text = user.expertise ?? ''; 
+
+    // Contact
+    _workPhoneCtrl.text = user.workPhoneNumber ?? '';
+    _extCtrl.text = user.extension ?? '';
+    _personalMobileCtrl.text = user.personalMobileNumber ?? '';
+    _personalEmailCtrl.text = user.personalEmailAddress ?? '';
+    _seatingLocationCtrl.text = user.seatingLocation ?? '';
+    _presentAddressCtrl.text = user.presentAddress ?? ''; 
+    _permanentAddressCtrl.text = user.permanentAddress ?? ''; 
+
+    // Hierarchy
+    _selectedReportingManagerId = user.reportingManager;
+    _selectedSecondaryManagerId = user.secondaryReportingManager;
+    
+    // The image path will be handled by the UI Builder using ImageHelper
   }
 
   Future<void> _selectDate(TextEditingController controller, {bool calcAge = false}) async {
@@ -165,11 +182,7 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
       setState(() {
         controller.text = DateFormat('yyyy-MM-dd').format(picked);
         if (calcAge) {
-          final today = DateTime.now();
-          int age = today.year - picked.year;
-          if (today.month < picked.month || (today.month == picked.month && today.day < picked.day)) {
-            age--;
-          }
+          final age = DateTime.now().year - picked.year;
           _ageCtrl.text = "$age years";
         }
       });
@@ -185,48 +198,53 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
     final cleanSalary = _salaryCtrl.text.replaceAll(',', '');
 
     final newUser = UserModel(
-      id: widget.userToEdit?.id ?? '', // Use existing ID if editing
+      id: widget.userToEdit?.id ?? '', 
       email: _emailCtrl.text.trim(), 
-      password: '', // Password not updated here usually
+      password: '',
       firstName: _firstNameCtrl.text.trim(), lastName: _lastNameCtrl.text.trim(),
       nickName: _nickNameCtrl.text.trim(), employeeId: _empIdCtrl.text.trim(),
       
       salary: double.tryParse(cleanSalary),
-      iban: _ibanCtrl.text.trim(),
       lastMonthCommission: double.tryParse(_lastMonthCommCtrl.text),
+      employeeHourlyRate: double.tryParse(_hourlyRateCtrl.text),
+      iban: _ibanCtrl.text.trim(),
+      
+      jobDescription: _jobDescCtrl.text,
+      subJobDescription: _subJobDescCtrl.text,
 
       department: _selectedDepartment, location: _locationCtrl.text,
       designation: _designationCtrl.text, dateOfJoining: _dojCtrl.text,
       employmentType: _employmentType, employeeStatus: _employeeStatus,
-      zohoRole: _zohoRole, currentExperience: _currExpCtrl.text,
-      totalExperience: _totalExpCtrl.text, sourceOfHire: _sourceOfHireCtrl.text,
+      zohoRole: _zohoRole, sourceOfHire: _sourceOfHireCtrl.text,
+      currentExperience: _currExpCtrl.text, totalExperience: _totalExpCtrl.text,
 
       dateOfBirth: _dobCtrl.text, gender: _gender, maritalStatus: _maritalStatus,
       aboutMe: _aboutMeCtrl.text, expertise: _expertiseCtrl.text,
 
       workPhoneNumber: _workPhoneCtrl.text, extension: _extCtrl.text,
       personalMobileNumber: _personalMobileCtrl.text,
-      personalEmailAddress: _personalEmailCtrl.text, seatingLocation: _seatingLocationCtrl.text,
-      presentAddress: _presentAddressCtrl.text, permanentAddress: _permanentAddressCtrl.text,
+      personalEmailAddress: _personalEmailCtrl.text,
+      seatingLocation: _seatingLocationCtrl.text,
+      presentAddress: _presentAddressCtrl.text,
+      permanentAddress: _permanentAddressCtrl.text,
       
-      reportingManager: _selectedReportingManagerId, secondaryReportingManager: _selectedSecondaryManagerId,
-      
-      jobDescription: _jobDescCtrl.text, subJobDescription: _subJobDescCtrl.text,
+      reportingManager: _selectedReportingManagerId,
+      secondaryReportingManager: _selectedSecondaryManagerId,
     );
 
     try {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Submitting...")));
       
-      // Check if we are creating or updating
       if (widget.userToEdit == null) {
-        await GetIt.I<AdminRepository>().createEmployee(newUser, profilePicPath: _profilePicPath,profilePicBytes: _profilePicBytes);
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Employee Created!")));
+        await GetIt.I<AdminRepository>().createEmployee(newUser, profilePicPath: _profilePicPath, profilePicBytes: _profilePicBytes);
       } else {
-    
-        await GetIt.I<AdminRepository>().updateEmployee(newUser, profilePicPath: _profilePicPath,profilePicBytes: _profilePicBytes);
+        await GetIt.I<AdminRepository>().updateEmployee(newUser, profilePicPath: _profilePicPath, profilePicBytes: _profilePicBytes);
       }
-      
-      if (mounted) Navigator.pop(context);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Success!")));
+        Navigator.pop(context);
+      }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
     }
@@ -237,6 +255,12 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
     if (val == null || val.isEmpty) return 'Required';
     final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
     if (!emailRegex.hasMatch(val)) return 'Invalid Email';
+    return null;
+  }
+
+  String? _validateIBAN(String? val) {
+    if (val == null || val.isEmpty) return null; 
+    if (val.length < 15) return 'IBAN too short'; 
     return null;
   }
 
@@ -253,16 +277,35 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
     ]);
   }
 
+  // --- FIX: Image Preview Logic ---
   Widget _buildProfilePicPicker() {
+    ImageProvider? imageProvider;
+    
+    // 1. New Upload (Web)
+    if (kIsWeb && _profilePicBytes != null) {
+      imageProvider = MemoryImage(_profilePicBytes!);
+    } 
+    // 2. New Upload (Mobile)
+    else if (!kIsWeb && _profilePicPath != null) {
+      imageProvider = FileImage(io.File(_profilePicPath!));
+    } 
+    // 3. Existing User Image (Edit Mode)
+    else if (widget.userToEdit?.profilePicture != null && widget.userToEdit!.profilePicture!.isNotEmpty) {
+      imageProvider = NetworkImage(ImageHelper.getFullUrl(widget.userToEdit!.profilePicture));
+    }
+
     return Column(children: [
       GestureDetector(onTap: () async {
         final result = await FilePicker.platform.pickFiles(type: FileType.image, withData: true);
         if (result != null) setState(() { kIsWeb ? _profilePicBytes = result.files.single.bytes : _profilePicPath = result.files.single.path; });
-      }, child: CircleAvatar(radius: 50, backgroundColor: Colors.grey[800], backgroundImage: (kIsWeb && _profilePicBytes != null) ? MemoryImage(_profilePicBytes!) : (!kIsWeb && _profilePicPath != null) ? FileImage(io.File(_profilePicPath!)) as ImageProvider : null, child: (_profilePicPath == null && _profilePicBytes == null) ? const Icon(Icons.camera_alt, color: Colors.white, size: 30) : null)),
+      }, child: CircleAvatar(radius: 50, backgroundColor: Colors.grey[800], backgroundImage: imageProvider, child: imageProvider == null ? const Icon(Icons.camera_alt, color: Colors.white, size: 30) : null)),
       const SizedBox(height: 8), const Text("Upload Photo", style: TextStyle(color: Colors.grey, fontSize: 12)), const SizedBox(height: 24)
     ]);
   }
 
+  // ... (buildStepContent and helpers same as before, no changes needed there if using this full file) ...
+  // Paste Step Content Builder Here (Same as previous turn, just ensure it uses the controllers defined above)
+  
   Widget _buildStepContent(int step) {
     switch (step) {
       case 0: return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -271,16 +314,17 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
           const SizedBox(height: 16),
           _buildTwoColumnRow(_customTextField("Nick Name", _nickNameCtrl), _customTextField("Employee ID", _empIdCtrl, isRequired: true, icon: Icons.badge_outlined)),
           const SizedBox(height: 16),
-          _customTextField("Work Email (Login ID)", _emailCtrl, isRequired: true, icon: Icons.email, validator: _validateEmail),
+          _customTextField("Work Email (Login ID)", _emailCtrl, isRequired: true, icon: Icons.email, validator: _validateEmail), 
           const SizedBox(height: 16), const Divider(color: Colors.white24), _sectionHeader("Financials"), const SizedBox(height: 16),
-          _buildTwoColumnRow(_customTextField("Salary", _salaryCtrl, icon: Icons.attach_money, isNumber: true, isSalary: true), _customTextField("Pending Commission", _lastMonthCommCtrl, isNumber: true)),
+          _buildTwoColumnRow(_customTextField("Salary", _salaryCtrl, icon: Icons.attach_money, isNumber: true, isSalary: true), _customTextField("Hourly Rate", _hourlyRateCtrl, isNumber: true)), 
           const SizedBox(height: 16),
-          _customTextField("IBAN", _ibanCtrl, icon: Icons.account_balance),
+          _buildTwoColumnRow(_customTextField("Pending Commission", _lastMonthCommCtrl, isNumber: true), _customTextField("IBAN", _ibanCtrl, icon: Icons.account_balance)),
           const SizedBox(height: 16),
           _customTextField("Job Description", _jobDescCtrl, maxLines: 2),
           const SizedBox(height: 16),
           _customTextField("Sub Job Description", _subJobDescCtrl, maxLines: 2),
         ]);
+        
       case 1: return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _sectionHeader("Personal Details"), const SizedBox(height: 20),
           _buildTwoColumnRow(_customTextField("Date of Birth", _dobCtrl, icon: Icons.cake, isDate: true), _customTextField("Age", _ageCtrl, readOnly: true)),
@@ -292,18 +336,20 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
           _customTextField("About Me (Optional)", _aboutMeCtrl, maxLines: 3),
           const SizedBox(height: 16), _customTextField("Expertise", _expertiseCtrl),
         ]);
+
       case 2: return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _sectionHeader("Contact Details"), const SizedBox(height: 20),
           _buildTwoColumnRow(_customTextField("Work Phone", _workPhoneCtrl, icon: Icons.phone), _customTextField("Personal Mobile", _personalMobileCtrl, icon: Icons.phone_android)),
           const SizedBox(height: 16),
-          _customTextField("Personal Email", _personalEmailCtrl, icon: Icons.email_outlined, validator: _validateEmail),
+          _customTextField("Personal Email", _personalEmailCtrl, icon: Icons.email_outlined, validator: _validateEmail), 
           const SizedBox(height: 16),
           _customTextField("Seating Location", _seatingLocationCtrl, icon: Icons.chair),
           const SizedBox(height: 16),
           _customTextField("Present Address", _presentAddressCtrl, icon: Icons.home, maxLines: 3),
           const SizedBox(height: 16),
-          _customTextField("Permanent Address", _permanentAddressCtrl, icon: Icons.location_city, maxLines: 3),
+          _customTextField("Permanent Address", _permanentAddressCtrl, icon: Icons.location_city, maxLines: 3), 
         ]);
+
       case 3: return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _sectionHeader("Work Information"), const SizedBox(height: 20),
           _buildTwoColumnRow(_customDropdown("Department", _departments, (val) => _selectedDepartment = val, isRequired: true), _customTextField("Location", _locationCtrl, icon: Icons.place)),
@@ -318,6 +364,7 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
           const SizedBox(height: 16),
           _customTextField("Source of Hire", _sourceOfHireCtrl),
         ]);
+
       case 4: return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _sectionHeader("Hierarchy Information"), const SizedBox(height: 20),
           _buildTwoColumnRow(_employeeDropdown("Reporting Manager", _selectedReportingManagerId, (val) => _selectedReportingManagerId = val), _employeeDropdown("Secondary Manager", _selectedSecondaryManagerId, (val) => _selectedSecondaryManagerId = val)),
@@ -325,8 +372,8 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
       default: return const SizedBox.shrink();
     }
   }
-
-  // --- Widgets ---
+  
+  // --- UI Helpers ---
   Widget _buildGenderRadio(String value) { return Row(children: [Radio<String>(value: value, groupValue: _gender, activeColor: const Color(0xFFDC2726), onChanged: (val) => setState(() => _gender = val!)), Text(value, style: const TextStyle(color: Colors.white))]); }
   Widget _buildTwoColumnRow(Widget left, Widget right) { return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Expanded(child: left), const SizedBox(width: 16), Expanded(child: right)]); }
   Widget _sectionHeader(String title) { return Text(title, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)); }
@@ -370,14 +417,7 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
     String? validSelectedId = selectedId;
     if (validSelectedId != null && !seenIds.contains(validSelectedId)) validSelectedId = null;
 
-    return DropdownButtonFormField<String>(
-      value: validSelectedId,
-      dropdownColor: const Color(0xFF2C2C2C),
-      style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(labelText: label, labelStyle: const TextStyle(color: Colors.grey), filled: true, fillColor: const Color(0xFF2C2C2C), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)),
-      items: dropdownItems,
-      onChanged: onChanged,
-    );
+    return DropdownButtonFormField<String>(value: validSelectedId, dropdownColor: const Color(0xFF2C2C2C), style: const TextStyle(color: Colors.white), decoration: InputDecoration(labelText: label, labelStyle: const TextStyle(color: Colors.grey), filled: true, fillColor: const Color(0xFF2C2C2C), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)), items: dropdownItems, onChanged: onChanged);
   }
 
   Widget _buildCustomStepperHeader() {
@@ -389,10 +429,12 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
   }
 }
 
+// --- Comma Formatter ---
 class ThousandsSeparatorInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     if (newValue.text.isEmpty) return newValue;
+    final int selectionIndex = newValue.selection.end;
     final double value = double.parse(newValue.text.replaceAll(',', ''));
     final String newText = NumberFormat("#,##0").format(value);
     return TextEditingValue(text: newText, selection: TextSelection.collapsed(offset: newText.length));

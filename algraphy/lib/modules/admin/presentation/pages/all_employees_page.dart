@@ -1,3 +1,4 @@
+import 'package:algraphy/core/utils/image_helper.dart';
 import 'package:algraphy/modules/admin/data/repositories/admin_data_repository.dart';
 import 'package:algraphy/modules/auth/data/models/user_model.dart';
 import 'package:algraphy/modules/profile/presentation/profile_page.dart';
@@ -142,6 +143,7 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
     if (path == null || path.isEmpty) return null;
     if (path.startsWith('http')) return NetworkImage(path);
     if (!kIsWeb) return FileImage(File(path));
-    return NetworkImage(path); // Fallback
+    final fullUrl = ImageHelper.getFullUrl(path);
+    return NetworkImage(fullUrl); // Fallback
   }
 }

@@ -127,4 +127,19 @@ class AdminRepository {
   }
 
 
+  // --- NEW: Get Organization Attendance ---
+  Future<List<Map<String, dynamic>>> getOrganizationAttendance() async {
+    final token = await getToken();
+    if (token == null) throw Exception("Admin not authenticated");
+
+    final response = await _api.get('org_attendance_logs', token: token);
+
+    if (response['status'] == 'success') {
+      return List<Map<String, dynamic>>.from(response['data']);
+    } else {
+      throw Exception(response['message']);
+    }
+  }
+
+
 }

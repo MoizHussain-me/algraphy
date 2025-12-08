@@ -98,6 +98,7 @@ class _EmployeeManagementPageState extends State<EmployeeManagementPage> with Si
         views.add(const _MobileOnboardingRestrictedView());
       }
       
+ 
       views.add(const ComingSoonPage(title: "Organization Tree"));
       views.add(const ComingSoonPage(title: "Documents"));
     } else {

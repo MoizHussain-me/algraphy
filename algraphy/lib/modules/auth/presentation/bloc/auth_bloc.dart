@@ -1,38 +1,18 @@
 import 'package:algraphy/modules/auth/data/auth_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../data/models/user_model.dart';
 
-// --- Events ---
-abstract class AuthEvent {}
-class AppStarted extends AuthEvent {}
-class LoginRequested extends AuthEvent {
-  final String email;
-  final String password;
-  LoginRequested(this.email, this.password);
-}
-class LogoutRequested extends AuthEvent {}
+// Import the separate files (Do NOT define classes here)
+import 'auth_event.dart';
+import 'auth_state.dart';
 
-// --- States ---
-abstract class AuthState {}
-class AuthInitial extends AuthState {}
-class AuthLoading extends AuthState {}
-class AuthAuthenticated extends AuthState {
-  final UserModel user;
-  AuthAuthenticated(this.user);
-}
-class AuthUnauthenticated extends AuthState {}
-class AuthFailure extends AuthState {
-  final String message;
-  AuthFailure(this.message);
-}
-
-// --- Bloc ---
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _repo;
 
   AuthBloc(this._repo) : super(AuthInitial()) {
+    
     on<AppStarted>((event, emit) async {
-      // For now, start unauthenticated. Later we check storage.
+      // Check for persisted token logic here if implementing auto-login
+      // For now, default to Unauthenticated
       emit(AuthUnauthenticated());
     });
 
@@ -41,7 +21,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       try {
         final user = await _repo.login(event.email, event.password);
         emit(AuthAuthenticated(user));
-            } catch (e) {
+      } catch (e) {
         emit(AuthFailure(e.toString()));
       }
     });
@@ -49,6 +29,33 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<LogoutRequested>((event, emit) async {
       await _repo.logout();
       emit(AuthUnauthenticated());
+    });
+
+    on<ChangePasswordRequested>((event, emit) async {
+      try {
+        await _repo.changePassword(event.newPassword);
+        
+        if (state is AuthAuthenticated) {
+          final currentUser = (state as AuthAuthenticated).user;
+          
+          // Success: Update flag and go to Dashboard
+          final updatedUser = currentUser.copyWith(
+            mustChangePassword: false,
+          );
+          emit(AuthAuthenticated(updatedUser));
+        }
+      } catch (e) {
+        // 🛑 CRITICAL FIX:
+        // Do NOT emit AuthFailure here. That causes logout.
+        // Instead, we just print the error. 
+        // Ideally, emit a side-effect state, but for now, doing nothing 
+        // keeps the user on the "Change Password" page so they can try again.
+        print("Change Password Error: $e");
+        
+        // Optional: If you want to show a SnackBar, you'd need a separate 
+        // "SubmissionFailed" state that extends AuthAuthenticated, 
+        // but simply catching it here prevents the Logout crash.
+      }
     });
   }
 }

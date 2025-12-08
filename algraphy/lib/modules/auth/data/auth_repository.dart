@@ -42,4 +42,26 @@ class AuthRepository {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
   }
+
+
+Future<void> changePassword(String newPassword) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString(AppConstants.tokenKey);
+    
+    if (token == null) throw Exception("Not authenticated");
+
+    final response = await _api.post(
+      'change_password', 
+      {
+        'new_password': newPassword,
+        'token': token, // <--- ADD THIS LINE (Send token in body too)
+      }, 
+      token: token,
+    );
+
+    if (response['status'] != 'success') {
+      throw Exception(response['message'] ?? 'Failed to change password');
+    }
+  }
+
 }

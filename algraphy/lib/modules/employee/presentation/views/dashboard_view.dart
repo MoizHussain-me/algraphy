@@ -1,18 +1,75 @@
 import 'package:algraphy/modules/auth/data/models/user_model.dart';
+import 'package:algraphy/modules/employee/data/attendance_repository.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
+import 'package:intl/intl.dart';
 
-class DashboardView extends StatelessWidget {
-  final UserModel currentUser; // Accepts current user
+class DashboardView extends StatefulWidget {
+  final UserModel currentUser;
 
   const DashboardView({super.key, required this.currentUser});
 
   @override
+  State<DashboardView> createState() => _DashboardViewState();
+}
+
+class _DashboardViewState extends State<DashboardView> {
+  bool _isLoading = true;
+  
+  // Data Placeholders
+  String _hoursThisWeek = "0.0";
+  String _daysPresent = "0";
+  Map<String, double> _weeklyChartData = {}; // {'Mon': 8.0, 'Tue': 7.5}
+  List<dynamic> _recentActivities = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDashboardData();
+  }
+
+  Future<void> _fetchDashboardData() async {
+    try {
+      final data = await GetIt.I<AttendanceRepository>().getDashboardStats();
+      if (mounted) {
+        setState(() {
+          _hoursThisWeek = data['hoursWeek'].toString();
+          _daysPresent = data['daysPresent'].toString();
+          
+          // Parse Chart Data
+          // API returns: {'Mon': 8.5, 'Tue': 7.0}
+          // We convert it to a robust Map<String, double>
+          final rawChart = data['weeklyChart'];
+          if (rawChart is Map) {
+             _weeklyChartData = rawChart.map((k, v) => MapEntry(k.toString(), double.tryParse(v.toString()) ?? 0.0));
+          } else if (rawChart is List) {
+             // Handle case where PHP returns empty array [] instead of object {}
+             _weeklyChartData = {};
+          }
+
+          _recentActivities = data['recent'] ?? [];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Dashboard Error: $e");
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     const Color backgroundDark = Color(0xFF080808);
-    // Check role to decide layout
-    final bool isAdmin = currentUser.role == 'admin';
+    final bool isAdmin = widget.currentUser.role == 'admin';
     
+    if (_isLoading) {
+      return Container(
+        color: backgroundDark,
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Container(
       color: backgroundDark,
       child: SingleChildScrollView(
@@ -22,14 +79,14 @@ class DashboardView extends StatelessWidget {
     );
   }
 
-  // --- EMPLOYEE DASHBOARD (Personal Focus) ---
+  // --- EMPLOYEE DASHBOARD ---
   Widget _buildEmployeeDashboard(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 1. Welcome Header
         Text(
-          "Welcome back, ${currentUser.firstName}!", // Dynamic Name
+          "Welcome back, ${widget.currentUser.firstName}!",
           style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
         ),
         const SizedBox(height: 4),
@@ -41,31 +98,31 @@ class DashboardView extends StatelessWidget {
 
         // 2. Key Metric Cards
         _buildGrid([
-          const _MetricCard(
+          _MetricCard(
             title: "Hours This Week",
-            value: "38.5",
-            trend: "+2.5%",
+            value: _hoursThisWeek,
+            trend: "Target: 40h",
             icon: Icons.access_time_filled,
-            iconColor: Color(0xFF7C4DFF), // Purple
+            iconColor: const Color(0xFF7C4DFF), // Purple
           ),
-          const _MetricCard(
+          _MetricCard(
             title: "Days Present",
-            value: "22",
-            trend: "+5.2%",
+            value: _daysPresent,
+            trend: "This Month",
             icon: Icons.calendar_today,
-            iconColor: Color(0xFF00BFA5), // Teal
+            iconColor: const Color(0xFF00BFA5), // Teal
           ),
           const _MetricCard(
             title: "Attendance Rate",
-            value: "95.6%",
-            trend: "+1.2%",
+            value: "100%", // Placeholder calculation
+            trend: "On Track",
             icon: Icons.show_chart,
             iconColor: Color(0xFFFF9100), // Orange
           ),
           const _MetricCard(
             title: "Leave Balance",
-            value: "4 Days",
-            trend: "Casual",
+            value: "14",
+            trend: "Annual",
             icon: Icons.beach_access,
             iconColor: Color(0xFFE91E63), // Pink
           ),
@@ -74,11 +131,11 @@ class DashboardView extends StatelessWidget {
         const SizedBox(height: 24),
 
         // 3. Weekly Hours Chart
-        const _SectionHeader(title: "My Weekly Hours"),
+        const _SectionHeader(title: "Weekly Work Trend"),
         const SizedBox(height: 16),
-        const SizedBox(
+        SizedBox(
           height: 250,
-          child: _WeeklyBarChart(isEmployee: true),
+          child: _WeeklyBarChart(data: _weeklyChartData, isEmployee: true),
         ),
 
         const SizedBox(height: 24),
@@ -93,30 +150,13 @@ class DashboardView extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
-            children: const [
-              _ActivityItem(
-                title: "Clocked In",
-                subtitle: "Today at 09:00 AM",
-                color: Colors.green,
-                isFirst: true,
-              ),
-              _ActivityItem(
-                title: "Leave Approved",
-                subtitle: "Yesterday",
-                color: Colors.blue,
-              ),
-              _ActivityItem(
-                title: "Clocked Out",
-                subtitle: "2 days ago at 05:30 PM",
-                color: Colors.green,
-              ),
-              _ActivityItem(
-                title: "Late Arrival",
-                subtitle: "3 days ago at 09:45 AM",
-                color: Colors.orange,
-                isLast: true,
-              ),
-            ],
+            children: _recentActivities.isEmpty 
+             ? [const Text("No recent activity", style: TextStyle(color: Colors.grey))]
+             : _recentActivities.asMap().entries.map((entry) {
+                final index = entry.key;
+                final item = entry.value;
+                return _buildActivityItemFromLog(item, isFirst: index == 0, isLast: index == _recentActivities.length - 1);
+            }).toList(),
           ),
         ),
         
@@ -125,107 +165,39 @@ class DashboardView extends StatelessWidget {
     );
   }
 
-  // --- ADMIN DASHBOARD (Organization Focus) ---
-  Widget _buildAdminDashboard(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 1. Welcome Header
-        const Text(
-          "Admin Overview",
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          "Organization status for today",
-          style: TextStyle(fontSize: 14, color: Colors.grey),
-        ),
-        const SizedBox(height: 24),
+  // --- Helper: Convert Log to Activity Item ---
+  Widget _buildActivityItemFromLog(Map<String, dynamic> log, {bool isFirst = false, bool isLast = false}) {
+    final checkIn = DateTime.parse(log['check_in']);
+    final checkOut = log['check_out'] != null ? DateTime.parse(log['check_out']) : null;
+    final dateStr = DateFormat('MMM d').format(checkIn);
+    final timeStr = DateFormat('h:mm a').format(checkIn);
 
-        // 2. Key Metric Cards (Admin Specific)
-        _buildGrid([
-          const _MetricCard(
-            title: "Live Headcount",
-            value: "45/50",
-            trend: "90% Present",
-            icon: Icons.people,
-            iconColor: Colors.blueAccent, 
-          ),
-          const _MetricCard(
-            title: "Absent Today",
-            value: "3",
-            trend: "Sick / Casual",
-            icon: Icons.person_off,
-            iconColor: Colors.redAccent, 
-          ),
-          const _MetricCard(
-            title: "Late Arrivals",
-            value: "8",
-            trend: "+2 vs yest.",
-            icon: Icons.timer_off,
-            iconColor: Colors.orangeAccent, 
-          ),
-          const _MetricCard(
-            title: "Pending Approvals",
-            value: "5",
-            trend: "Needs Action",
-            icon: Icons.approval,
-            iconColor: Colors.amber, 
-          ),
-        ]),
+    // If checkOut exists, show that too, otherwise just Check In
+    String title = "Clocked In";
+    String subtitle = "$dateStr at $timeStr";
+    Color color = Colors.green;
 
-        const SizedBox(height: 24),
+    if (checkOut != null) {
+      // If we want to show Check Out as a separate event, we would need to split the list.
+      // For simplicity, we show the completed session here.
+      title = "Shift Completed";
+      final outTimeStr = DateFormat('h:mm a').format(checkOut);
+      subtitle = "$dateStr • $timeStr - $outTimeStr";
+      color = Colors.blue;
+    }
 
-        // 3. Organization Chart
-        const _SectionHeader(title: "Organization Attendance Trend"),
-        const SizedBox(height: 16),
-        const SizedBox(
-          height: 250,
-          child: _WeeklyBarChart(isEmployee: false),
-        ),
-
-        const SizedBox(height: 24),
-
-        // 4. Team Activity
-        const _SectionHeader(title: "Team Activity Feed"),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1C1C1C),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            children: const [
-              _ActivityItem(
-                title: "Sarah Smith",
-                subtitle: "Clocked in Late (09:15 AM)",
-                color: Colors.orange,
-                isFirst: true,
-              ),
-              _ActivityItem(
-                title: "John Doe",
-                subtitle: "Applied for Sick Leave",
-                color: Colors.blue,
-              ),
-              _ActivityItem(
-                title: "Mike Ross",
-                subtitle: "Clocked Out Early (04:00 PM)",
-                color: Colors.red,
-              ),
-              _ActivityItem(
-                title: "Emily Blunt",
-                subtitle: "Completed Onboarding",
-                color: Colors.green,
-                isLast: true,
-              ),
-            ],
-          ),
-        ),
-        
-        const SizedBox(height: 40),
-      ],
+    return _ActivityItem(
+      title: title,
+      subtitle: subtitle,
+      color: color,
+      isFirst: isFirst,
+      isLast: isLast,
     );
+  }
+
+  // --- ADMIN DASHBOARD (Placeholder for now) ---
+  Widget _buildAdminDashboard(BuildContext context) {
+    return const Center(child: Text("Admin Dashboard (Coming Soon)", style: TextStyle(color: Colors.white)));
   }
 
   Widget _buildGrid(List<Widget> children) {
@@ -238,7 +210,6 @@ class DashboardView extends StatelessWidget {
           mainAxisSpacing: 16,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          // Aspect Ratio 1.1 prevents overflow
           childAspectRatio: 1.1, 
           children: children,
         );
@@ -282,10 +253,7 @@ class _MetricCard extends StatelessWidget {
               Expanded(child: Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12), overflow: TextOverflow.ellipsis)),
               Container(
                 padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                decoration: BoxDecoration(color: iconColor.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
                 child: Icon(icon, color: iconColor, size: 16),
               ),
             ],
@@ -293,30 +261,13 @@ class _MetricCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              Text(value, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               Row(
                 children: [
-                  Icon(
-                    trend.contains('+') || trend.contains('Need') ? Icons.info_outline : Icons.trending_up,
-                    color: Colors.grey,
-                    size: 12,
-                  ),
+                  const Icon(Icons.info_outline, color: Colors.grey, size: 12),
                   const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      trend,
-                      style: const TextStyle(color: Colors.grey, fontSize: 11),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
+                  Expanded(child: Text(trend, style: const TextStyle(color: Colors.grey, fontSize: 11), overflow: TextOverflow.ellipsis)),
                 ],
               ),
             ],
@@ -330,10 +281,15 @@ class _MetricCard extends StatelessWidget {
 // --- 2. Chart Widget (FL Chart) ---
 class _WeeklyBarChart extends StatelessWidget {
   final bool isEmployee;
-  const _WeeklyBarChart({this.isEmployee = true});
+  final Map<String, double> data; // Dynamic Data
+  
+  const _WeeklyBarChart({this.isEmployee = true, required this.data});
 
   @override
   Widget build(BuildContext context) {
+    // Days of week order
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -343,7 +299,7 @@ class _WeeklyBarChart extends StatelessWidget {
       child: BarChart(
         BarChartData(
           alignment: BarChartAlignment.spaceAround,
-          maxY: isEmployee ? 12 : 100,
+          maxY: 12,
           barTouchData: BarTouchData(enabled: true),
           titlesData: FlTitlesData(
             show: true,
@@ -352,19 +308,10 @@ class _WeeklyBarChart extends StatelessWidget {
                 showTitles: true,
                 getTitlesWidget: (value, meta) {
                   const style = TextStyle(color: Colors.grey, fontSize: 10);
-                  String text;
-                  switch (value.toInt()) {
-                    case 0: text = 'Mon'; break;
-                    case 1: text = 'Tue'; break;
-                    case 2: text = 'Wed'; break;
-                    case 3: text = 'Thu'; break;
-                    case 4: text = 'Fri'; break;
-                    default: text = '';
+                  if (value.toInt() >= 0 && value.toInt() < days.length) {
+                     return SideTitleWidget(axisSide: meta.axisSide, child: Text(days[value.toInt()], style: style));
                   }
-                  return SideTitleWidget(
-                    axisSide: meta.axisSide,
-                    child: Text(text, style: style),
-                  );
+                  return const SizedBox.shrink();
                 },
               ),
             ),
@@ -373,51 +320,26 @@ class _WeeklyBarChart extends StatelessWidget {
                 showTitles: true,
                 reservedSize: 28,
                 getTitlesWidget: (value, meta) {
-                  return Text(
-                    isEmployee ? '${value.toInt()}h' : '${value.toInt()}%', 
-                    style: const TextStyle(color: Colors.grey, fontSize: 10)
-                  );
+                  return Text('${value.toInt()}h', style: const TextStyle(color: Colors.grey, fontSize: 10));
                 },
               ),
             ),
             topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
             rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           ),
-          gridData: FlGridData(
-            show: true,
-            drawVerticalLine: false,
-            getDrawingHorizontalLine: (value) => FlLine(color: Colors.white10, strokeWidth: 1),
-          ),
+          gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (value) => FlLine(color: Colors.white10, strokeWidth: 1)),
           borderData: FlBorderData(show: false),
-          barGroups: isEmployee 
-            ? _buildEmployeeData() 
-            : _buildAdminData(),
+          barGroups: List.generate(days.length, (index) {
+            final dayName = days[index];
+            final hours = data[dayName] ?? 0.0;
+            return _makeGroupData(index, hours, hours > 0 ? Colors.blueAccent : Colors.grey.withOpacity(0.1));
+          }),
         ),
       ),
     );
   }
 
-  List<BarChartGroupData> _buildEmployeeData() {
-    return [
-      _makeGroupData(0, 8.5, Colors.blueAccent),
-      _makeGroupData(1, 7.0, Colors.purpleAccent),
-      _makeGroupData(2, 9.0, Colors.blueAccent),
-      _makeGroupData(3, 9.5, Colors.blueAccent),
-      _makeGroupData(4, 6.0, Colors.orangeAccent),
-    ];
-  }
-
-  List<BarChartGroupData> _buildAdminData() {
-    return [
-      _makeGroupData(0, 95, Colors.greenAccent, maxY: 100),
-      _makeGroupData(1, 92, Colors.greenAccent, maxY: 100),
-      _makeGroupData(2, 88, Colors.orangeAccent, maxY: 100),
-      _makeGroupData(3, 96, Colors.greenAccent, maxY: 100),
-      _makeGroupData(4, 90, Colors.greenAccent, maxY: 100),
-    ];
-  }
-
-  BarChartGroupData _makeGroupData(int x, double y, Color color, {double maxY = 12}) {
+  BarChartGroupData _makeGroupData(int x, double y, Color color) {
     return BarChartGroupData(
       x: x,
       barRods: [
@@ -426,11 +348,7 @@ class _WeeklyBarChart extends StatelessWidget {
           color: color,
           width: 16,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-          backDrawRodData: BackgroundBarChartRodData(
-            show: true,
-            toY: maxY,
-            color: Colors.white.withValues(alpha: 0.05),
-          ),
+          backDrawRodData: BackgroundBarChartRodData(show: true, toY: 12, color: Colors.white.withOpacity(0.05)),
         ),
       ],
     );
@@ -461,17 +379,11 @@ class _ActivityItem extends StatelessWidget {
         // Timeline Line & Dot
         Column(
           children: [
-            if (!isFirst) Container(width: 2, height: 20, color: Colors.white10),
+            if (!isFirst) Container(width: 2, height: 20, color: Colors.white10) else const SizedBox(height: 20),
             Container(
               width: 10,
               height: 10,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 6),
-                ]
-              ),
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle, boxShadow: [BoxShadow(color: color.withOpacity(0.5), blurRadius: 6)]),
             ),
             if (!isLast) Container(width: 2, height: 30, color: Colors.white10),
           ],
@@ -485,7 +397,7 @@ class _ActivityItem extends StatelessWidget {
               Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-              const SizedBox(height: 24), // Spacing between items
+              const SizedBox(height: 24), 
             ],
           ),
         ),
@@ -501,13 +413,6 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
-      ),
-    );
+    return Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white));
   }
 }
