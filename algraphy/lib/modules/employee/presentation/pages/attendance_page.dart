@@ -18,11 +18,10 @@ class _AttendancePageState extends State<AttendancePage> with SingleTickerProvid
   late TabController _tabController;
     // Tabs list
   final List<String> _tabs = [
-    "Dashboard",
     "Activities",
+    "Dashboard",
     "Attendance History",
     "Feeds",
-    "Profile",
     "Approvals"
   ];
 
@@ -74,13 +73,12 @@ class _AttendancePageState extends State<AttendancePage> with SingleTickerProvid
             controller: _tabController,
             children: [
               
+              AttendanceTimerView(userName: widget.currentUser,),
               DashboardView(currentUser: widget.currentUser,),
               // Tab 2: Activities (Timer)
-              const AttendanceTimerView(),
               const AttendanceHistoryPage(),
               // Other Tabs
               const ComingSoonPage(title: "Feeds"),
-              ProfilePage(user: widget.currentUser),
               const ComingSoonPage(title: "Approvals"),
             ],
           ),

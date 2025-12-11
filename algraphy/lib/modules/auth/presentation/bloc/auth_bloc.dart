@@ -11,22 +11,34 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc(this._repo) : super(AuthInitial()) {
     
     on<AppStarted>((event, emit) async {
-      // Check for persisted token logic here if implementing auto-login
-      // For now, default to Unauthenticated
-      emit(AuthUnauthenticated());
+            try {
+        // This calls the method that prints "AUTH: Checking storage..."
+        final user = await _repo.getCurrentUser();
+        
+        if (user != null) {
+          emit(AuthAuthenticated(user));
+        } else {
+          emit(AuthUnauthenticated());
+        }
+      } catch (_) {
+        emit(AuthUnauthenticated());
+      }
+
     });
 
     on<LoginRequested>((event, emit) async {
-      emit(AuthLoading());
+              final user = await _repo.getCurrentUser();
+           emit(AuthLoading());
       try {
-        final user = await _repo.login(event.email, event.password);
-        emit(AuthAuthenticated(user));
+        emit(AuthAuthenticated(user!));
       } catch (e) {
         emit(AuthFailure(e.toString()));
       }
+
     });
 
     on<LogoutRequested>((event, emit) async {
+      emit(AuthLoading());
       await _repo.logout();
       emit(AuthUnauthenticated());
     });
@@ -45,16 +57,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           emit(AuthAuthenticated(updatedUser));
         }
       } catch (e) {
-        // 🛑 CRITICAL FIX:
-        // Do NOT emit AuthFailure here. That causes logout.
-        // Instead, we just print the error. 
-        // Ideally, emit a side-effect state, but for now, doing nothing 
-        // keeps the user on the "Change Password" page so they can try again.
+      
         print("Change Password Error: $e");
         
-        // Optional: If you want to show a SnackBar, you'd need a separate 
-        // "SubmissionFailed" state that extends AuthAuthenticated, 
-        // but simply catching it here prevents the Logout crash.
       }
     });
   }

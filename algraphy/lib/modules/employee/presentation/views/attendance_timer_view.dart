@@ -1,25 +1,36 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:algraphy/modules/auth/data/models/user_model.dart';
 import 'package:algraphy/modules/employee/data/attendance_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:get_it/get_it.dart';
 
 class AttendanceTimerView extends StatefulWidget {
-  const AttendanceTimerView({super.key});
+  final UserModel userName;
+
+  const AttendanceTimerView({super.key, required this.userName});
 
   @override
   State<AttendanceTimerView> createState() => _AttendanceTimerViewState();
 }
 
 class _AttendanceTimerViewState extends State<AttendanceTimerView> {
-  // Logic Variables
   Timer? _timer;
+  
+  // Timer States
   Duration _elapsedTime = Duration.zero;
+  Duration _breakDuration = Duration.zero;
+  
+  // Data from API
+  String? _attendanceId;
   DateTime? _checkInTime;
   DateTime? _checkOutTime;
-  bool _isCheckedIn = false;
-  bool _isLoading = true; // Loading state for API
+  DateTime? _breakStartTime;
+  
+  // Status: null (Not Started), 'Present', 'On Break', 'Completed'
+  String? _status; 
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -32,94 +43,122 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
     _timer?.cancel();
     super.dispose();
   }
-
-  // --- 1. Fetch Initial Status from Server ---
+  
   Future<void> _fetchStatus() async {
     try {
-      final data = await GetIt.I<AttendanceRepository>().getTodayStatus();
+      final data = await GetIt.I<AttendanceRepository>().getTodayAttendance(widget.userName.id);
       
       if (mounted) {
         setState(() {
-          _isCheckedIn = data['isCheckedIn'] ?? false;
-          
-          if (data['checkInTime'] != null) {
-            _checkInTime = DateTime.parse(data['checkInTime']);
+          if (data != null) {
+            _attendanceId = data['id']?.toString();
+            _status = data['status'];
             
-            // If currently checked in, resume timer based on server time
-            if (_isCheckedIn) {
-              _startLocalTicker(); 
-            } else {
-               // If checked out, calculate final duration
-               if (data['checkOutTime'] != null) {
-                 _checkOutTime = DateTime.parse(data['checkOutTime']);
-                 _elapsedTime = _checkOutTime!.difference(_checkInTime!);
-               }
+            if (data['clock_in'] != null) {
+              _checkInTime = DateTime.parse(data['clock_in']);
             }
+            if (data['clock_out'] != null) {
+              _checkOutTime = DateTime.parse(data['clock_out']);
+            }
+            if (data['break_start'] != null) {
+              _breakStartTime = DateTime.parse(data['break_start']);
+            }
+            
+            // Resume Timer Logic
+            if (_status == 'Completed' && _checkOutTime != null && _checkInTime != null) {
+               // If completed, fix the time to the final duration
+               _elapsedTime = _checkOutTime!.difference(_checkInTime!);
+            } else if (_checkInTime != null) {
+               _startLocalTicker();
+            }
+          } else {
+            // No record found for today
+            _status = null;
+            _elapsedTime = Duration.zero;
           }
           _isLoading = false;
         });
       }
     } catch (e) {
-      debugPrint("Error fetching status: $e");
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // --- 2. Button Actions ---
-  Future<void> _handleCheckAction() async {
+  // --- Actions ---
+
+  Future<void> _handleClockIn() async {
     setState(() => _isLoading = true);
     try {
-      if (_isCheckedIn) {
-        // CHECK OUT
-        await GetIt.I<AttendanceRepository>().checkOut();
-        _stopTimer();
-      } else {
-        // CHECK IN
-        await GetIt.I<AttendanceRepository>().checkIn();
-        _startTimer();
-      }
+      await GetIt.I<AttendanceRepository>().checkIn(widget.userName.id);
+      await _fetchStatus(); // Refresh to get the generated ID and valid state
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) _showError(e.toString());
+      setState(() => _isLoading = false);
     }
   }
 
-  // --- 3. Timer Logic ---
-  void _startTimer() {
-    setState(() {
-      _isCheckedIn = true;
-      _checkInTime = DateTime.now(); // Local time sync with server roughly
-      _checkOutTime = null;
-      _startLocalTicker();
-    });
+  Future<void> _handleClockOut() async {
+    if (_attendanceId == null) return;
+    
+    // Validate Break Status
+    if (_status == 'On Break') {
+      _showError("Please Resume Work before Checking Out");
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await GetIt.I<AttendanceRepository>().checkOut(_attendanceId!);
+      await _fetchStatus();
+    } catch (e) {
+      if (mounted) _showError(e.toString());
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _toggleBreak() async {
+    if (_attendanceId == null) return;
+    
+    // Determine action based on current status
+    bool isStartingBreak = _status != 'On Break';
+    String statusPayload = isStartingBreak ? 'On Break' : 'Present';
+
+    setState(() => _isLoading = true);
+    try {
+      await GetIt.I<AttendanceRepository>().toggleBreak(statusPayload);
+      await _fetchStatus();
+    } catch (e) {
+      if (mounted) _showError(e.toString());
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
   }
 
   void _startLocalTicker() {
     _timer?.cancel();
-    // Update UI every second based on difference from _checkInTime
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_checkInTime != null && mounted) {
+      if (_checkInTime != null && mounted && _status != 'Completed') {
         setState(() {
+          // 1. Main Timer: Always runs from Clock In (Requirement: timer should not stop)
           _elapsedTime = DateTime.now().difference(_checkInTime!);
+          
+          // 2. Break Timer: Only runs if On Break
+          if (_status == 'On Break' && _breakStartTime != null) {
+            _breakDuration = DateTime.now().difference(_breakStartTime!);
+          } else {
+            _breakDuration = Duration.zero;
+          }
         });
       }
     });
   }
 
-  void _stopTimer() {
-    _timer?.cancel();
-    setState(() {
-      _isCheckedIn = false;
-      _checkOutTime = DateTime.now();
-    });
-  }
+  // --- Formatters ---
 
-  // --- Format Helpers ---
   String _formatDuration(Duration d) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     final hours = twoDigits(d.inHours);
@@ -137,6 +176,15 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
     return DateFormat('EEEE, d MMMM y').format(DateTime.now());
   }
 
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  }
+
+  // --- UI ---
+
   @override
   Widget build(BuildContext context) {
     const Color primaryRed = Color(0xFFDC2726);
@@ -144,79 +192,215 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
     const Color textColor = Colors.white;
     const Color textGrey = Colors.grey;
 
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    // Derived States
+    bool isOnDuty = _status == 'Present' || _status == 'On Break';
+    bool isOnBreak = _status == 'On Break';
+    bool isCompleted = _status == 'Completed';
+
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. Date Header
+          // Date Header
           Text(_formatDate(), style: const TextStyle(color: textGrey, fontSize: 16, fontWeight: FontWeight.w500)),
           const SizedBox(height: 8),
-          const Text("Good Morning, User", style: TextStyle(color: textColor, fontSize: 28, fontWeight: FontWeight.bold)),
+          
+          // Dynamic Greeting
+          Text(
+            "${_getGreeting()}, ${widget.userName.firstName}", 
+            style: const TextStyle(color: textColor, fontSize: 28, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 32),
 
-          // 2. Digital Timer Card
+          // --- Digital Timer Card ---
           Container(
             padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
-            decoration: BoxDecoration(color: surfaceColor, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5))]),
+            decoration: BoxDecoration(
+              color: surfaceColor, 
+              borderRadius: BorderRadius.circular(20), 
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5))]
+            ),
             child: Column(
               children: [
+                // Status Badge
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: _isCheckedIn ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+                    color: isOnBreak 
+                        ? Colors.orange.withOpacity(0.1) 
+                        : (isOnDuty ? Colors.green.withOpacity(0.1) : (isCompleted ? Colors.blue.withOpacity(0.1) : Colors.grey.withOpacity(0.1))),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: _isCheckedIn ? Colors.green : Colors.orange, width: 1),
+                    border: Border.all(
+                      color: isOnBreak 
+                          ? Colors.orange 
+                          : (isOnDuty ? Colors.green : (isCompleted ? Colors.blue : Colors.grey)), 
+                      width: 1
+                    ),
                   ),
-                  child: Text(_isCheckedIn ? "ON DUTY" : "OFF DUTY", style: TextStyle(color: _isCheckedIn ? Colors.green : Colors.orange, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.2)),
+                  child: Text(
+                    isOnBreak ? "ON BREAK" : (isOnDuty ? "ON DUTY" : (isCompleted ? "COMPLETED" : "OFF DUTY")),
+                    style: TextStyle(
+                      color: isOnBreak 
+                          ? Colors.orange 
+                          : (isOnDuty ? Colors.green : (isCompleted ? Colors.blue : Colors.grey)),
+                      fontWeight: FontWeight.bold, 
+                      fontSize: 12, 
+                      letterSpacing: 1.2
+                    ),
+                  ),
                 ),
+                
                 const SizedBox(height: 24),
+                
+                // Main Timer
                 Text(
                   _formatDuration(_elapsedTime),
-                  style: const TextStyle(color: textColor, fontSize: 64, fontWeight: FontWeight.w200, fontFeatures: [FontFeature.tabularFigures()]),
-                ),
-                const Text("Working Hours", style: TextStyle(color: textGrey, fontSize: 14)),
-                const SizedBox(height: 40),
-                
-                // CHECK IN BUTTON
-                GestureDetector(
-                  onTap: _handleCheckAction, // CONNECTED TO API
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    height: 80,
-                    width: 80,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _isCheckedIn ? primaryRed : Colors.green,
-                      boxShadow: [BoxShadow(color: (_isCheckedIn ? primaryRed : Colors.green).withOpacity(0.4), blurRadius: 20, spreadRadius: 5)],
-                    ),
-                    child: Icon(_isCheckedIn ? Icons.stop : Icons.fingerprint, color: Colors.white, size: 40),
+                  style: const TextStyle(
+                    color: textColor, 
+                    fontSize: 64, 
+                    fontWeight: FontWeight.w200, 
+                    fontFeatures: [FontFeature.tabularFigures()]
                   ),
                 ),
-                const SizedBox(height: 16),
-                Text(_isCheckedIn ? "Tap to Check Out" : "Tap to Check In", style: const TextStyle(color: textGrey, fontSize: 14)),
+                Text(
+                  isCompleted ? "Total Hours Worked" : "Working Hours", 
+                  style: const TextStyle(color: textGrey, fontSize: 14)
+                ),
+
+                // Break Timer (Visible only when on break)
+                if (isOnBreak) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.coffee, color: Colors.orange, size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Break: ${_formatDuration(_breakDuration)}",
+                          style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 40),
+
+                // --- Control Buttons ---
+                if (isCompleted)
+                  const Text("Shift Completed for Today", style: TextStyle(color: Colors.green, fontSize: 16, fontWeight: FontWeight.bold))
+                else if (!isOnDuty) 
+                  // CASE 1: Not Checked In -> Show Clock In
+                  GestureDetector(
+                    onTap: _handleClockIn,
+                    child: _buildCircleButton(
+                      icon: Icons.fingerprint, 
+                      color: Colors.green, 
+                      label: "Tap to Check In"
+                    ),
+                  )
+                else 
+                  // CASE 2: Checked In -> Show Break + Clock Out
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Break Button
+                      GestureDetector(
+                        onTap: _toggleBreak,
+                        child: _buildCircleButton(
+                          icon: isOnBreak ? Icons.play_arrow : Icons.coffee,
+                          color: isOnBreak ? Colors.green : Colors.orange,
+                          label: isOnBreak ? "Resume" : "Break",
+                          isSmall: false,
+                        ),
+                      ),
+                      
+                      const SizedBox(width: 32),
+
+                      // Clock Out Button (Disabled if on break)
+                      GestureDetector(
+                        onTap: isOnBreak ? null : _handleClockOut,
+                        child: Opacity(
+                          opacity: isOnBreak ? 0.5 : 1.0,
+                          child: _buildCircleButton(
+                            icon: Icons.stop,
+                            color: primaryRed,
+                            label: "Check Out",
+                            isSmall: false,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),
 
           const SizedBox(height: 24),
 
-          // 3. Stats Grid
+          // Stats Grid
           Row(
             children: [
-              Expanded(child: _buildStatCard(title: "Check In", time: _formatTime(_checkInTime), icon: Icons.login, color: Colors.green, surfaceColor: surfaceColor)),
+              Expanded(child: _buildStatCard(
+                title: "Check In", 
+                time: _formatTime(_checkInTime), 
+                icon: Icons.login, 
+                color: Colors.green, 
+                surfaceColor: surfaceColor
+              )),
               const SizedBox(width: 16),
-              Expanded(child: _buildStatCard(title: "Check Out", time: _formatTime(_checkOutTime), icon: Icons.logout, color: primaryRed, surfaceColor: surfaceColor)),
+              Expanded(child: _buildStatCard(
+                title: "Check Out", 
+                time: _formatTime(_checkOutTime), 
+                icon: Icons.logout, 
+                color: primaryRed, 
+                surfaceColor: surfaceColor
+              )),
             ],
           ),
-          const SizedBox(height: 16),
-          // ... (Rest of UI)
         ],
       ),
+    );
+  }
+
+  // --- Helper Widgets ---
+
+  Widget _buildCircleButton({
+    required IconData icon, 
+    required Color color, 
+    required String label, 
+    bool isSmall = false
+  }) {
+    final double size = isSmall ? 60 : 80;
+    final double iconSize = isSmall ? 30 : 40;
+
+    return Column(
+      children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          height: size,
+          width: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color,
+            boxShadow: [
+              BoxShadow(color: color.withOpacity(0.4), blurRadius: 20, spreadRadius: 5)
+            ],
+          ),
+          child: Icon(icon, color: Colors.white, size: iconSize),
+        ),
+        const SizedBox(height: 12),
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 14)),
+      ],
     );
   }
 

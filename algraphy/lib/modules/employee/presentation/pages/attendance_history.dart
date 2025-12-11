@@ -10,8 +10,8 @@ class AttendanceHistoryPage extends StatefulWidget {
 }
 
 class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
-  List<Map<String, dynamic>> _logs = [];
-  bool _isLoading = true;
+ bool _isLoading = true;
+  List<Map<String, dynamic>> _history = [];
 
   @override
   void initState() {
@@ -21,139 +21,141 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
 
   Future<void> _fetchHistory() async {
     try {
-      final logs = await GetIt.I<AttendanceRepository>().getHistory();
+      final data = await GetIt.I<AttendanceRepository>().getHistory();
       if (mounted) {
         setState(() {
-          _logs = logs;
+          _history = data;
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error loading history: $e"), backgroundColor: Colors.red),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
       }
     }
   }
 
+  // --- SAFE FORMATTERS (Prevents Null Crash) ---
+  String _formatTime(dynamic timeStr) {
+    if (timeStr == null || timeStr == '') return '--:--'; // Handle NULL safely
+    try {
+      final dt = DateTime.parse(timeStr.toString());
+      return DateFormat('hh:mm a').format(dt);
+    } catch (e) {
+      return '--:--';
+    }
+  }
+
+  String _formatDate(dynamic dateStr) {
+    if (dateStr == null) return '';
+    try {
+      final dt = DateTime.parse(dateStr.toString());
+      return DateFormat('MMM dd, yyyy').format(dt);
+    } catch (e) {
+      return dateStr.toString();
+    }
+  }
+
+  String _formatHours(dynamic hours) {
+    if (hours == null) return '-';
+    // Ensure we treat it as a number (API might return string "8.5" or int 8 or double 8.5)
+    final h = double.tryParse(hours.toString()) ?? 0.0;
+    return "${h.toStringAsFixed(1)} hrs";
+  }
+
   @override
   Widget build(BuildContext context) {
-    const Color backgroundDark = Color(0xFF080808);
-    const Color cardColor = Color(0xFF1C1C1C);
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
 
-    // FIX: Removed Scaffold & AppBar. Using Container for background.
-    return Container(
-      color: backgroundDark,
-      child: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _logs.isEmpty
-              ? _buildEmptyState()
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _logs.length,
-                  itemBuilder: (context, index) {
-                    final log = _logs[index];
-                    return _buildHistoryCard(log, cardColor);
-                  },
-                ),
-    );
-  }
+    if (_history.isEmpty) {
+      return const Center(child: Text("No attendance history found", style: TextStyle(color: Colors.grey)));
+    }
 
-  Widget _buildHistoryCard(Map<String, dynamic> log, Color cardColor) {
-    // Parse Dates
-    // API returns '2023-10-27 09:00:00'
-    final checkIn = DateTime.parse(log['check_in']);
-    final checkOut = log['check_out'] != null ? DateTime.parse(log['check_out']) : null;
-    final String dateStr = DateFormat('EEE, d MMM y').format(checkIn);
-    
-    // Status Logic
-    final bool isPresent = checkOut == null; // Currently checked in
-    final double? hours = log['work_hours'] != null ? double.tryParse(log['work_hours'].toString()) : null;
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _history.length,
+      itemBuilder: (context, index) {
+        final item = _history[index];
+        final isCompleted = item['clock_out'] != null;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border(
-          left: BorderSide(
-            color: isPresent ? Colors.green : Colors.blueAccent,
-            width: 4,
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C1C1C),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white10),
           ),
-        ),
-      ),
-      child: Column(
-        children: [
-          // Header: Date & Duration
-          Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                dateStr,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              // Date & Status
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _formatDate(item['date']),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: isCompleted ? Colors.green.withOpacity(0.2) : Colors.orange.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      isCompleted ? "Completed" : "Active",
+                      style: TextStyle(
+                        color: isCompleted ? Colors.green : Colors.orange,
+                        fontSize: 10, 
+                        fontWeight: FontWeight.bold
+                      ),
+                    ),
+                  )
+                ],
               ),
-              if (hours != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(8),
+
+              // Times
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.login, color: Colors.green, size: 14),
+                      const SizedBox(width: 4),
+                      Text(_formatTime(item['clock_in']), style: const TextStyle(color: Colors.grey, fontSize: 14)),
+                    ],
                   ),
-                  child: Text(
-                    "${hours.toStringAsFixed(1)} Hrs",
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.logout, color: Colors.red, size: 14),
+                      const SizedBox(width: 4),
+                      Text(_formatTime(item['clock_out']), style: const TextStyle(color: Colors.grey, fontSize: 14)),
+                    ],
                   ),
+                ],
+              ),
+
+              // Total Hours
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey[900],
+                  borderRadius: BorderRadius.circular(8),
                 ),
+                child: Text(
+                  _formatHours(item['work_hours']),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 16),
-          // Time Row
-          Row(
-            children: [
-              _buildTimeColumn("CHECK IN", checkIn, Colors.green),
-              // Dotted Line or Spacer
-              Expanded(
-                child: Container(
-                  height: 1, 
-                  color: Colors.grey[800], 
-                  margin: const EdgeInsets.symmetric(horizontal: 16)
-                ),
-              ),
-              _buildTimeColumn("CHECK OUT", checkOut, Colors.redAccent),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimeColumn(String label, DateTime? time, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 4),
-        Text(
-          time != null ? DateFormat('hh:mm a').format(time) : "--:--",
-          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w500),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.history, size: 64, color: Colors.grey[800]),
-          const SizedBox(height: 16),
-          const Text("No attendance history found", style: TextStyle(color: Colors.grey)),
-        ],
-      ),
+        );
+      },
     );
   }
 }

@@ -75,7 +75,7 @@ class AppRouter {
             title: 'Profile',
             currentRoute: AppRoutes.profile,
             currentUser: user,
-            body: ProfilePage(user: user,),
+            body: ProfilePage(user: user,showScaffold: false,),
           ),
         );
 

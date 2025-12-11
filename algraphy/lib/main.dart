@@ -7,8 +7,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'config/di/injector.dart';
 import 'config/routes/app_router.dart';
 
-// Data & Repositories
-
 // Bloc
 import 'modules/auth/presentation/bloc/auth_bloc.dart';
 import 'modules/auth/presentation/bloc/auth_state.dart';
@@ -16,9 +14,7 @@ import 'modules/auth/presentation/bloc/auth_event.dart';
 
 // Pages
 import 'modules/employee/presentation/pages/attendance_page.dart'; 
-import 'modules/auth/presentation/pages/change_password_page.dart'; // Import this
-
-// Widgets
+import 'modules/auth/presentation/pages/change_password_page.dart'; 
 import 'modules/common/widgets/main_scaffold.dart';
 
 void main() async {
@@ -53,21 +49,34 @@ class MyApp extends StatelessWidget {
         // --- AUTH GUARD LOGIC ---
         home: BlocBuilder<AuthBloc, AuthState>(
           builder: (context, state) {
+            
+            // Debugging: Print state changes to console
+            print("Current Auth State: $state");
+
+            // 1. Logged In Successfully
             if (state is AuthAuthenticated) {
-              // 1. Check if Password Change is Required
               if (state.user.mustChangePassword) {
                 return const ChangePasswordPage();
               }
-
-              // 2. Otherwise, Show Dashboard
               return MainScaffold(
                 title: 'Dashboard',
                 currentUser: state.user,
                 body: AttendancePage(currentUser: state.user), 
               );
-            } else {
-              // 3. Not Logged In
-              return const LoginPage(); 
+            } 
+            
+            // 2. Explicitly Not Logged In
+            else if (state is AuthUnauthenticated) {
+              return const LoginPage();
+            }
+            
+            // 3. Waiting for Storage Check (AuthInitial or AuthLoading)
+            else {
+              return const Scaffold(
+                body: Center(
+                  child: CircularProgressIndicator(color: Color(0xFFDC2726)),
+                ),
+              );
             }
           },
         ),

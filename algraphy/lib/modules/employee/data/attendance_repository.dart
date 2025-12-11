@@ -11,7 +11,7 @@ class AttendanceRepository {
   }
 
   // --- 1. Check In ---
-  Future<void> checkIn() async {
+  Future<void> checkIn(String userId) async {
     final token = await _getToken();
     if (token == null) throw Exception("Not authenticated");
 
@@ -22,8 +22,21 @@ class AttendanceRepository {
     }
   }
 
-  // --- 2. Check Out ---
-  Future<void> checkOut() async {
+  // --- 2. Toggle Break (FIXED) ---
+  Future<void> toggleBreak(String status) async {
+    final token = await _getToken();
+    if (token == null) throw Exception("Not authenticated");
+
+    // We don't need attendanceId, the backend finds the active session by Token
+    final response = await _api.post('toggle_break', {'status': status}, token: token);
+
+    if (response['status'] != 'success') {
+      throw Exception(response['message'] ?? "Failed to update break status");
+    }
+  }
+
+  // --- 3. Check Out ---
+  Future<void> checkOut(String attendanceId) async {
     final token = await _getToken();
     if (token == null) throw Exception("Not authenticated");
 
@@ -34,22 +47,25 @@ class AttendanceRepository {
     }
   }
 
-  // --- 3. Get Today's Status (For Button State & Timer) ---
-  Future<Map<String, dynamic>> getTodayStatus() async {
+  // --- 4. Get Today's Status ---
+  Future<Map<String, dynamic>?> getTodayAttendance(String userId) async {
     final token = await _getToken();
     if (token == null) throw Exception("Not authenticated");
 
-    final response = await _api.get('attendance_status', token: token);
+    try {
+      final response = await _api.get('attendance_status', token: token);
 
-    if (response['status'] == 'success') {
-      return response['data']; 
-      // Returns: { 'isCheckedIn': true/false, 'checkInTime': '2023-10-27 09:00:00', ... }
-    } else {
-      throw Exception(response['message']);
+      if (response['status'] == 'success') {
+        return response['data'];
+      } else {
+        return null; 
+      }
+    } catch (e) {
+      return null;
     }
   }
 
-  // --- 4. Get History (For Timeline) ---
+  // --- 5. Get History (FIXED NULL CRASH) ---
   Future<List<Map<String, dynamic>>> getHistory() async {
     final token = await _getToken();
     if (token == null) throw Exception("Not authenticated");
@@ -57,12 +73,15 @@ class AttendanceRepository {
     final response = await _api.get('my_attendance_history', token: token);
 
     if (response['status'] == 'success') {
+      // The API returns nulls for clock_out/work_hours. 
+      // We pass it as-is, but the UI MUST handle nulls.
       return List<Map<String, dynamic>>.from(response['data']);
     } else {
       throw Exception(response['message']);
     }
   }
-  
+
+  // --- 6. Dashboard Stats ---
   Future<Map<String, dynamic>> getDashboardStats() async {
     final token = await _getToken();
     if (token == null) throw Exception("Not authenticated");
@@ -74,7 +93,5 @@ class AttendanceRepository {
     } else {
       throw Exception(response['message']);
     }
-
   }
-  
 }

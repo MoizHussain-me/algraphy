@@ -1,5 +1,3 @@
-import 'package:intl/intl.dart';
-
 class UserModel {
   // System Fields
   final String id;
@@ -15,45 +13,45 @@ class UserModel {
   final String? employeeId;
   final String? profilePicture;
 
-  // -- FINANCIALS TABLE --
+  // -- FINANCIALS --
   final double? salary;
-  final double? lastMonthCommission; // Matches 'last_month_commission'
-  final double? employeeHourlyRate;  // Matches 'hourly_rate'
+  final double? lastMonthCommission; 
+  final double? employeeHourlyRate;
   final String? iban;
 
-  // -- PERSONAL DETAILS TABLE --
-  final String? dateOfBirth;
+  // -- PERSONAL --
+  final String? dateOfBirth; 
   final String? gender;
   final String? maritalStatus;
   final String? aboutMe;
   final String? expertise;
 
-  // -- CONTACT DETAILS TABLE --
-  final String? workPhoneNumber;     // Matches 'work_phone'
+  // -- CONTACT --
+  final String? workPhoneNumber;
   final String? extension;
-  final String? personalMobileNumber; // Matches 'personal_mobile'
-  final String? personalEmailAddress; // Matches 'personal_email'
+  final String? personalMobileNumber;
+  final String? personalEmailAddress;
   final String? seatingLocation;
   final String? presentAddress;
   final String? permanentAddress;
 
-  // -- WORK INFO TABLE --
+  // -- WORK --
   final String? department;
   final String? location;
   final String? designation;
   final String? dateOfJoining;
   final String? employmentType;
   final String? employeeStatus;
-  final String? zohoRole;
   final String? sourceOfHire;
   final String? currentExperience;
   final String? totalExperience;
   final String? jobDescription;
   final String? subJobDescription;
 
-  // -- HIERARCHY TABLE --
-  final String? reportingManager;
-  final String? secondaryReportingManager;
+  // -- HIERARCHY --
+  final String? reportingManager; // ID
+  final String? reportingManagerName; // NEW: Name
+  final String? secondaryReportingManager; // ID
 
   UserModel({
     required this.id, required this.email, required this.password,
@@ -64,9 +62,9 @@ class UserModel {
     this.workPhoneNumber, this.extension, this.personalMobileNumber, this.personalEmailAddress,
     this.seatingLocation, this.presentAddress, this.permanentAddress,
     this.department, this.location, this.designation, this.dateOfJoining,
-    this.employmentType, this.employeeStatus, this.zohoRole, this.sourceOfHire,
+    this.employmentType, this.employeeStatus, this.sourceOfHire,
     this.currentExperience, this.totalExperience, this.jobDescription, this.subJobDescription,
-    this.reportingManager, this.secondaryReportingManager,
+    this.reportingManager, this.reportingManagerName, this.secondaryReportingManager,
   });
 
   String get calculatedAge {
@@ -82,30 +80,60 @@ class UserModel {
 
   String get fullName => "$firstName $lastName";
 
-  // --- Serialization (Sending to PHP) ---
+  // --- SERIALIZATION FIX: Ensure keys match fromMap ---
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      'userId': id, // Matches fromMap: m['userId']
       'email': email,
       'password': password,
       'role': role,
       'mustChangePassword': mustChangePassword,
       
-      'firstName': firstName, 'lastName': lastName, 'nickName': nickName, 'employeeId': employeeId,
-      'salary': salary, 'lastMonthCommission': lastMonthCommission, 'employeeHourlyRate': employeeHourlyRate, 'iban': iban,
-      'dateOfBirth': dateOfBirth, 'gender': gender, 'maritalStatus': maritalStatus, 'aboutMe': aboutMe, 'expertise': expertise,
-      'workPhoneNumber': workPhoneNumber, 'extension': extension, 'personalMobileNumber': personalMobileNumber,
-      'personalEmailAddress': personalEmailAddress, 'seatingLocation': seatingLocation,
-      'presentAddress': presentAddress, 'permanentAddress': permanentAddress,
-      'department': department, 'location': location, 'designation': designation, 'dateOfJoining': dateOfJoining,
-      'employmentType': employmentType, 'employeeStatus': employeeStatus, 'zohoRole': zohoRole,
-      'sourceOfHire': sourceOfHire, 'currentExperience': currentExperience, 'totalExperience': totalExperience,
-      'jobDescription': jobDescription, 'subJobDescription': subJobDescription,
-      'reportingManager': reportingManager, 'secondaryReportingManager': secondaryReportingManager,
+      // Use snake_case to match what fromMap expects
+      'first_name': firstName,
+      'last_name': lastName,
+      'nick_name': nickName,
+      'employee_code': employeeId,
+      'profile_picture': profilePicture,
+      
+      'salary': salary,
+      'last_month_commission': lastMonthCommission,
+      'hourly_rate': employeeHourlyRate,
+      'iban': iban,
+      
+      'date_of_birth': dateOfBirth,
+      'gender': gender,
+      'marital_status': maritalStatus,
+      'about_me': aboutMe,
+      'expertise': expertise,
+      
+      'work_phone': workPhoneNumber,
+      'extension': extension,
+      'personal_mobile': personalMobileNumber,
+      'personal_email': personalEmailAddress,
+      'seating_location': seatingLocation,
+      'present_address': presentAddress,
+      'permanent_address': permanentAddress,
+      
+      'department': department,
+      'location': location,
+      'designation': designation,
+      'date_of_joining': dateOfJoining,
+      'employment_type': employmentType,
+      'employee_status': employeeStatus,
+      'source_of_hire': sourceOfHire,
+      'current_experience': currentExperience,
+      'total_experience': totalExperience,
+      'job_description': jobDescription,
+      'sub_job_description': subJobDescription,
+      
+      'reporting_manager_id': reportingManager,
+      'reporting_manager_name': reportingManagerName,
+      'secondary_reporting_manager_id': secondaryReportingManager,
     };
   }
 
-  // --- Deserialization (Receiving from PHP) ---
+  // --- DESERIALIZATION ---
   factory UserModel.fromMap(Map<String, dynamic> m) {
     // Robust Boolean Check
     final rawChangePass = m['mustChangePassword'] ?? m['must_change_password'];
@@ -115,53 +143,52 @@ class UserModel {
     else if (rawChangePass is String) mustChange = rawChangePass == '1' || rawChangePass == 'true';
 
     return UserModel(
-      id: m['user_id']?.toString() ?? '',
-      email: m['email']?.toString() ?? '',
-      password: '', role: m['role'] ?? 'employee',
+      id: m['userId']?.toString() ?? m['id']?.toString() ?? '', 
+      email: m['email']?.toString() ?? '',    
+      password: '', 
+      role: m['role'] ?? 'employee',
       mustChangePassword: mustChange,
       
-      firstName: m['first_name'],
-      lastName: m['last_name'],
-      nickName: m['nick_name'],
+      firstName: m['first_name'], 
+      lastName: m['last_name'], 
+      nickName: m['nick_name'], 
       employeeId: m['employee_code'] ?? m['employee_id'], 
       profilePicture: m['profile_picture'],
       
-      // FIX: Map exact JSON keys to fields
       salary: double.tryParse(m['salary']?.toString() ?? ''),
-      lastMonthCommission: double.tryParse(m['last_month_commission']?.toString() ?? ''), // Fixed Key
-      employeeHourlyRate: double.tryParse(m['hourly_rate']?.toString() ?? ''), // Fixed Key
+      lastMonthCommission: double.tryParse(m['last_month_commission']?.toString() ?? ''),
+      employeeHourlyRate: double.tryParse(m['hourly_rate']?.toString() ?? ''),
       iban: m['iban'],
       
-      jobDescription: m['job_description'],
+      jobDescription: m['job_description'], 
       subJobDescription: m['sub_job_description'],
       
-      dateOfBirth: m['date_of_birth'],
-      gender: m['gender'],
-      maritalStatus: m['marital_status'],
-      aboutMe: m['about_me'],
+      dateOfBirth: m['date_of_birth'], 
+      gender: m['gender'], 
+      maritalStatus: m['marital_status'], 
+      aboutMe: m['about_me'], 
       expertise: m['expertise'],
       
-      // FIX: Contact Details Keys
       workPhoneNumber: m['work_phone'], 
-      extension: m['extension'],
+      extension: m['extension'], 
       personalMobileNumber: m['personal_mobile'],
-      personalEmailAddress: m['personal_email'], // Fixed Key
+      personalEmailAddress: m['personal_email'], 
       seatingLocation: m['seating_location'],
-      presentAddress: m['present_address'],
+      presentAddress: m['present_address'], 
       permanentAddress: m['permanent_address'],
       
-      dateOfJoining: m['date_of_joining'],
-      department: m['department'],
-      location: m['location'],
+      dateOfJoining: m['date_of_joining'], 
+      department: m['department'], 
+      location: m['location'], 
       designation: m['designation'],
-      employmentType: m['employment_type'],
+      employmentType: m['employment_type'], 
       employeeStatus: m['employee_status'],
-      zohoRole: m['zoho_role'],
-      sourceOfHire: m['source_of_hire'],
-      currentExperience: m['current_experience']?.toString(),
+      sourceOfHire: m['source_of_hire'], 
+      currentExperience: m['current_experience']?.toString(), 
       totalExperience: m['total_experience']?.toString(),
       
       reportingManager: m['reporting_manager_id']?.toString(),
+      reportingManagerName: m['reporting_manager_name'],
       secondaryReportingManager: m['secondary_reporting_manager_id']?.toString(),
     );
   }

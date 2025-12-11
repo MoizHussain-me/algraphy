@@ -130,7 +130,7 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
               // Open Profile View
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => ProfilePage(user: user)),
+                MaterialPageRoute(builder: (_) => ProfilePage(user: user,showScaffold: true,)),
               );
             },
           ),
