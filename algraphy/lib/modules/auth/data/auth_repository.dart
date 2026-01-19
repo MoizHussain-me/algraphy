@@ -3,13 +3,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:algraphy/modules/auth/data/models/user_model.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../../core/utils/constants.dart';
+import '../../../../core/services/logger_service.dart';
 
 class AuthRepository {
-  final ApiClient _api = ApiClient();
+  final ApiClient _api;
+
+  AuthRepository({ApiClient? api}) : _api = api ?? ApiClient();
 
   // --- LOGIN ---
   Future<UserModel> login(String email, String password) async {
-    print("AUTH: Attempting login for $email"); // DEBUG
+    logger.i("AUTH: Attempting login for $email");
     final response = await _api.post('login', {
       'email': email,
       'password': password,
@@ -29,7 +32,7 @@ class AuthRepository {
       // CRITICAL: Save session before returning
       await _saveSession(user, token);
       
-      print("AUTH: Login successful and session saved."); // DEBUG
+      logger.i("AUTH: Login successful and session saved.");
       return user;
     } else {
       throw Exception(response['message'] ?? 'Login failed');
@@ -55,9 +58,9 @@ class AuthRepository {
       final userJson = jsonEncode(user.toMap());
       
       await prefs.setString(AppConstants.userKey, userJson);
-      print("AUTH: User persisted to storage: $userJson"); // DEBUG
+      logger.d("AUTH: User persisted to storage: $userJson");
     } catch (e) {
-      print("AUTH: Failed to persist user: $e"); // DEBUG
+      logger.e("AUTH: Failed to persist user: $e");
     }
   }
 
@@ -65,19 +68,17 @@ class AuthRepository {
     final prefs = await SharedPreferences.getInstance();
     final jsonString = prefs.getString(AppConstants.userKey);
 
-    print("AUTH: Checking storage... Found: ${jsonString != null}"); // DEBUG
+    logger.d("AUTH: Checking storage... Found: ${jsonString != null}");
 
     if (jsonString != null) {
       try {
         final Map<String, dynamic> userMap = jsonDecode(jsonString);
         final user = UserModel.fromMap(userMap);
-        print("AUTH: User loaded successfully: ${user.fullName}"); // DEBUG
+        logger.i("AUTH: User loaded successfully: ${user.fullName}");
         return user;
       } catch (e, stackTrace) {
         // Capture specific error causing the failure
-        print("AUTH ERROR: Corrupted user data in storage."); 
-        print("Error: $e"); 
-        print("Stack: $stackTrace");
+        logger.e("AUTH ERROR: Corrupted user data in storage.", error: e, stackTrace: stackTrace);
         
         // If data is corrupted, clear it so we don't get stuck
         await prefs.remove(AppConstants.userKey);
@@ -91,7 +92,7 @@ class AuthRepository {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(AppConstants.tokenKey);
     await prefs.remove(AppConstants.userKey);
-    print("AUTH: Session cleared."); // DEBUG
+    logger.i("AUTH: Session cleared.");
   }
   
   // --- OTHER ACTIONS ---

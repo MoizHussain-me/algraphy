@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:algraphy/modules/auth/data/models/user_model.dart';
-import 'package:algraphy/modules/employee/data/attendance_repository.dart';
+import 'package:algraphy/modules/employee/data/employee_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:get_it/get_it.dart';
@@ -46,7 +46,7 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
   
   Future<void> _fetchStatus() async {
     try {
-      final data = await GetIt.I<AttendanceRepository>().getTodayAttendance(widget.userName.id);
+      final data = await GetIt.I<EmployeeRepository>().getTodayStatus();
       
       if (mounted) {
         setState(() {
@@ -89,7 +89,7 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
   Future<void> _handleClockIn() async {
     setState(() => _isLoading = true);
     try {
-      await GetIt.I<AttendanceRepository>().checkIn(widget.userName.id);
+      await GetIt.I<EmployeeRepository>().checkIn();
       await _fetchStatus(); // Refresh to get the generated ID and valid state
     } catch (e) {
       if (mounted) _showError(e.toString());
@@ -109,7 +109,7 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
 
     setState(() => _isLoading = true);
     try {
-      await GetIt.I<AttendanceRepository>().checkOut(_attendanceId!);
+      await GetIt.I<EmployeeRepository>().checkOut();
       await _fetchStatus();
     } catch (e) {
       if (mounted) _showError(e.toString());
@@ -126,7 +126,7 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
 
     setState(() => _isLoading = true);
     try {
-      await GetIt.I<AttendanceRepository>().toggleBreak(statusPayload);
+      await GetIt.I<EmployeeRepository>().toggleBreak(statusPayload);
       await _fetchStatus();
     } catch (e) {
       if (mounted) _showError(e.toString());

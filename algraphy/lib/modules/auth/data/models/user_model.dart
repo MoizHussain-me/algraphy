@@ -1,16 +1,20 @@
 class UserModel {
   // System Fields
-  final String id;
+  final String id; // This is the user_id (e.g., 7)
   final String email;
   final String password;
   final String role;
   final bool mustChangePassword;
+  
+  // NEW: Hierarchy Logic
+  final int directReportsCount;
 
   // -- EMPLOYEES TABLE --
   final String? firstName;
   final String? lastName;
   final String? nickName;
-  final String? employeeId;
+  final String? employeeId;   // THIS WILL BE THE PRIMARY KEY (e.g., 5)
+  final String? employeeCode; // THIS WILL BE THE CODE (e.g., EMP-1001)
   final String? profilePicture;
 
   // -- FINANCIALS --
@@ -50,13 +54,14 @@ class UserModel {
 
   // -- HIERARCHY --
   final String? reportingManager; // ID
-  final String? reportingManagerName; // NEW: Name
+  final String? reportingManagerName; // Name
   final String? secondaryReportingManager; // ID
 
   UserModel({
     required this.id, required this.email, required this.password,
     this.role = "employee", this.mustChangePassword = true,
-    this.firstName, this.lastName, this.nickName, this.employeeId, this.profilePicture,
+    this.directReportsCount = 0, 
+    this.firstName, this.lastName, this.nickName, this.employeeId, this.employeeCode, this.profilePicture,
     this.salary, this.lastMonthCommission, this.employeeHourlyRate, this.iban,
     this.dateOfBirth, this.gender, this.maritalStatus, this.aboutMe, this.expertise,
     this.workPhoneNumber, this.extension, this.personalMobileNumber, this.personalEmailAddress,
@@ -66,6 +71,8 @@ class UserModel {
     this.currentExperience, this.totalExperience, this.jobDescription, this.subJobDescription,
     this.reportingManager, this.reportingManagerName, this.secondaryReportingManager,
   });
+
+  bool get isManager => role == 'admin' || directReportsCount > 0;
 
   String get calculatedAge {
     if (dateOfBirth == null || dateOfBirth!.isEmpty) return "";
@@ -80,33 +87,29 @@ class UserModel {
 
   String get fullName => "$firstName $lastName";
 
-  // --- SERIALIZATION FIX: Ensure keys match fromMap ---
   Map<String, dynamic> toMap() {
     return {
-      'userId': id, // Matches fromMap: m['userId']
+      'userId': id,
       'email': email,
       'password': password,
       'role': role,
       'mustChangePassword': mustChangePassword,
-      
-      // Use snake_case to match what fromMap expects
+      'direct_reports_count': directReportsCount,
       'first_name': firstName,
       'last_name': lastName,
       'nick_name': nickName,
-      'employee_code': employeeId,
+      'employee_id': employeeId, // Saves the PK
+      'employee_code': employeeCode, // Saves the EMP-XXX
       'profile_picture': profilePicture,
-      
       'salary': salary,
       'last_month_commission': lastMonthCommission,
       'hourly_rate': employeeHourlyRate,
       'iban': iban,
-      
       'date_of_birth': dateOfBirth,
       'gender': gender,
       'marital_status': maritalStatus,
       'about_me': aboutMe,
       'expertise': expertise,
-      
       'work_phone': workPhoneNumber,
       'extension': extension,
       'personal_mobile': personalMobileNumber,
@@ -114,7 +117,6 @@ class UserModel {
       'seating_location': seatingLocation,
       'present_address': presentAddress,
       'permanent_address': permanentAddress,
-      
       'department': department,
       'location': location,
       'designation': designation,
@@ -126,16 +128,13 @@ class UserModel {
       'total_experience': totalExperience,
       'job_description': jobDescription,
       'sub_job_description': subJobDescription,
-      
       'reporting_manager_id': reportingManager,
       'reporting_manager_name': reportingManagerName,
       'secondary_reporting_manager_id': secondaryReportingManager,
     };
   }
 
-  // --- DESERIALIZATION ---
   factory UserModel.fromMap(Map<String, dynamic> m) {
-    // Robust Boolean Check
     final rawChangePass = m['mustChangePassword'] ?? m['must_change_password'];
     bool mustChange = false;
     if (rawChangePass is bool) mustChange = rawChangePass;
@@ -143,32 +142,37 @@ class UserModel {
     else if (rawChangePass is String) mustChange = rawChangePass == '1' || rawChangePass == 'true';
 
     return UserModel(
+      // SYSTEM ID (Usually user_id = 7)
       id: m['userId']?.toString() ?? m['id']?.toString() ?? '', 
-      email: m['email']?.toString() ?? '',    
+      
+      email: m['email']?.toString() ?? '',     
       password: '', 
       role: m['role'] ?? 'employee',
       mustChangePassword: mustChange,
+      directReportsCount: int.tryParse(m['direct_reports_count']?.toString() ?? '0') ?? 0,
       
       firstName: m['first_name'], 
       lastName: m['last_name'], 
       nickName: m['nick_name'], 
-      employeeId: m['employee_code'] ?? m['employee_id'], 
-      profilePicture: m['profile_picture'],
+
+      // FIX: Mapping the PK explicitly (e.g., 5)
+      employeeId: m['employee_id']?.toString() ?? m['id']?.toString(), 
+
+      // FIX: Mapping the visible code (e.g., EMP-1001)
+      employeeCode: m['employee_code'], 
       
+      profilePicture: m['profile_picture'],
       salary: double.tryParse(m['salary']?.toString() ?? ''),
       lastMonthCommission: double.tryParse(m['last_month_commission']?.toString() ?? ''),
       employeeHourlyRate: double.tryParse(m['hourly_rate']?.toString() ?? ''),
       iban: m['iban'],
-      
       jobDescription: m['job_description'], 
       subJobDescription: m['sub_job_description'],
-      
       dateOfBirth: m['date_of_birth'], 
       gender: m['gender'], 
       maritalStatus: m['marital_status'], 
       aboutMe: m['about_me'], 
       expertise: m['expertise'],
-      
       workPhoneNumber: m['work_phone'], 
       extension: m['extension'], 
       personalMobileNumber: m['personal_mobile'],
@@ -176,7 +180,6 @@ class UserModel {
       seatingLocation: m['seating_location'],
       presentAddress: m['present_address'], 
       permanentAddress: m['permanent_address'],
-      
       dateOfJoining: m['date_of_joining'], 
       department: m['department'], 
       location: m['location'], 
@@ -186,7 +189,6 @@ class UserModel {
       sourceOfHire: m['source_of_hire'], 
       currentExperience: m['current_experience']?.toString(), 
       totalExperience: m['total_experience']?.toString(),
-      
       reportingManager: m['reporting_manager_id']?.toString(),
       reportingManagerName: m['reporting_manager_name'],
       secondaryReportingManager: m['secondary_reporting_manager_id']?.toString(),
@@ -199,12 +201,13 @@ class UserModel {
     String? password,
     String? role,
     bool? mustChangePassword,
+    int? directReportsCount,
     String? firstName,
     String? lastName,
     String? nickName,
     String? employeeId,
+    String? employeeCode,
     String? profilePicture,
-    // Add other fields if needed for updates...
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -212,20 +215,17 @@ class UserModel {
       password: password ?? this.password,
       role: role ?? this.role,
       mustChangePassword: mustChangePassword ?? this.mustChangePassword,
+      directReportsCount: directReportsCount ?? this.directReportsCount,
       firstName: firstName ?? this.firstName,
       lastName: lastName ?? this.lastName,
       nickName: nickName ?? this.nickName,
       employeeId: employeeId ?? this.employeeId,
+      employeeCode: employeeCode ?? this.employeeCode,
       profilePicture: profilePicture ?? this.profilePicture,
-
-      // Pass existing values for the rest to ensure nothing is lost
       salary: salary,
       iban: iban,
       department: department,
       designation: designation,
-      // ... pass all other existing fields here ...
-      // Ideally, copyWith should handle ALL fields, but for this specific
-      // "Change Password" use case, preserving the main ones is key.
     );
   }
 }

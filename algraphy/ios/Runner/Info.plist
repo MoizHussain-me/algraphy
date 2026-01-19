@@ -24,6 +24,33 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+
+	<!-- 1. ATTENDANCE MODULE: Location Permissions -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Algraphy requires access to your location to verify your clock-in and clock-out points for attendance records.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>Algraphy requires your location to ensure accurate attendance tracking even when the app is in the background.</string>
+
+    <!-- 2. PROFILE & SIGNATURE: Camera/Photo Permissions -->
+    <key>NSCameraUsageDescription</key>
+    <string>Algraphy needs camera access so you can take a profile picture or scan documents.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Algraphy needs access to your photo library to let you upload profile pictures and signature images.</string>
+
+    <!-- 3. DOCUMENT MODULE: File Handling -->
+    <key>UIFileSharingEnabled</key>
+    <true/>
+    <key>LSSupportsOpeningDocumentsInPlace</key>
+    <true/>
+
+    <!-- 4. NETWORK SECURITY: Mandatory for App Store -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <false/>
+    </dict>
+
+
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

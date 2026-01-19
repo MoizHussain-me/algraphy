@@ -17,5 +17,7 @@ class AppRoutes {
   static const comingSoon = '/coming-soon';
   static const attendanceHistory = '/attendance/history';
   static const attendance = '/attendance';
+  static const signature = '/signature';
+
 
 }

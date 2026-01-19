@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 // Config
 import 'config/di/injector.dart';
 import 'config/routes/app_router.dart';
+import 'core/services/logger_service.dart';
 
 // Bloc
 import 'modules/auth/presentation/bloc/auth_bloc.dart';
@@ -51,7 +52,7 @@ class MyApp extends StatelessWidget {
           builder: (context, state) {
             
             // Debugging: Print state changes to console
-            print("Current Auth State: $state");
+            logger.d("Current Auth State: $state");
 
             // 1. Logged In Successfully
             if (state is AuthAuthenticated) {
@@ -65,18 +66,18 @@ class MyApp extends StatelessWidget {
               );
             } 
             
-            // 2. Explicitly Not Logged In
-            else if (state is AuthUnauthenticated) {
-              return const LoginPage();
-            }
-            
-            // 3. Waiting for Storage Check (AuthInitial or AuthLoading)
-            else {
+            // 2. Initial Checks (App start only)
+            else if (state is AuthInitial) {
               return const Scaffold(
                 body: Center(
                   child: CircularProgressIndicator(color: Color(0xFFDC2726)),
                 ),
               );
+            }
+            
+            // 3. Login Page (Unauthenticated, Loading, Failure, etc.)
+            else {
+              return const LoginPage();
             }
           },
         ),

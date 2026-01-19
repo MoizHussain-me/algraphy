@@ -3,6 +3,9 @@ import 'package:algraphy/modules/auth/presentation/bloc/auth_state.dart';
 import 'package:algraphy/modules/auth/presentation/pages/login.dart';
 import 'package:algraphy/modules/employee/presentation/pages/attendance_history.dart';
 import 'package:algraphy/modules/profile/presentation/profile_page.dart';
+import 'package:algraphy/modules/signature/data/repository/signature_repository.dart';
+import 'package:algraphy/modules/signature/presentation/bloc/signature_bloc.dart';
+import 'package:algraphy/modules/signature/presentation/pages/signature_view_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../modules/auth/data/models/user_model.dart';
@@ -25,7 +28,7 @@ class AppRouter {
             title: 'Dashboard',
             currentRoute: AppRoutes.home,
             currentUser: user,
-            body: AttendancePage(currentUser: user,),
+            body: AttendancePage(currentUser: user),
           ),
         );
 
@@ -39,7 +42,7 @@ class AppRouter {
             title: 'Attendance',
             currentRoute: AppRoutes.attendance,
             currentUser: user,
-            body: AttendancePage(currentUser: user,),
+            body: AttendancePage(currentUser: user),
           ),
         );
 
@@ -75,12 +78,11 @@ class AppRouter {
             title: 'Profile',
             currentRoute: AppRoutes.profile,
             currentUser: user,
-            body: ProfilePage(user: user,showScaffold: false,),
+            body: ProfilePage(user: user, showScaffold: false),
           ),
         );
 
-
- case AppRoutes.employees:
+      case AppRoutes.employees:
         return _buildProtectedPage(
           settings: settings,
           builder: (user) => MainScaffold(
@@ -92,13 +94,8 @@ class AppRouter {
           ),
         );
 
-
-
-
-
-
       case AppRoutes.chats:
-      case AppRoutes.settings:     
+      case AppRoutes.settings:
       case AppRoutes.algraphyPro:
       case AppRoutes.about:
       case AppRoutes.services:
@@ -113,6 +110,18 @@ class AppRouter {
             currentRoute: settings.name ?? '',
             currentUser: user,
             body: ComingSoonPage(title: _getTitleFromRoute(settings.name)),
+          ),
+        );
+
+      // Inside AppRouter.dart
+      case AppRoutes.signature:
+        // Extract token from settings.arguments or URL parameters
+        final String token = settings.arguments as String? ?? "";
+
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider(
+            create: (context) => SignatureBloc(SignatureRepository()),
+            child: SignatureViewPage(token: token),
           ),
         );
 

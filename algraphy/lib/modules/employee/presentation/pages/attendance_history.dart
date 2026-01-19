@@ -1,4 +1,4 @@
-import 'package:algraphy/modules/employee/data/attendance_repository.dart';
+import 'package:algraphy/modules/employee/data/employee_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
@@ -21,7 +21,7 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
 
   Future<void> _fetchHistory() async {
     try {
-      final data = await GetIt.I<AttendanceRepository>().getHistory();
+      final data = await GetIt.I<EmployeeRepository>().getAttendanceHistory();
       if (mounted) {
         setState(() {
           _history = data;
