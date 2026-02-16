@@ -87,53 +87,6 @@ class UserModel {
 
   String get fullName => "$firstName $lastName";
 
-  Map<String, dynamic> toMap() {
-    return {
-      'userId': id,
-      'email': email,
-      'password': password,
-      'role': role,
-      'mustChangePassword': mustChangePassword,
-      'direct_reports_count': directReportsCount,
-      'first_name': firstName,
-      'last_name': lastName,
-      'nick_name': nickName,
-      'employee_id': employeeId, // Saves the PK
-      'employee_code': employeeCode, // Saves the EMP-XXX
-      'profile_picture': profilePicture,
-      'salary': salary,
-      'last_month_commission': lastMonthCommission,
-      'hourly_rate': employeeHourlyRate,
-      'iban': iban,
-      'date_of_birth': dateOfBirth,
-      'gender': gender,
-      'marital_status': maritalStatus,
-      'about_me': aboutMe,
-      'expertise': expertise,
-      'work_phone': workPhoneNumber,
-      'extension': extension,
-      'personal_mobile': personalMobileNumber,
-      'personal_email': personalEmailAddress,
-      'seating_location': seatingLocation,
-      'present_address': presentAddress,
-      'permanent_address': permanentAddress,
-      'department': department,
-      'location': location,
-      'designation': designation,
-      'date_of_joining': dateOfJoining,
-      'employment_type': employmentType,
-      'employee_status': employeeStatus,
-      'source_of_hire': sourceOfHire,
-      'current_experience': currentExperience,
-      'total_experience': totalExperience,
-      'job_description': jobDescription,
-      'sub_job_description': subJobDescription,
-      'reporting_manager_id': reportingManager,
-      'reporting_manager_name': reportingManagerName,
-      'secondary_reporting_manager_id': secondaryReportingManager,
-    };
-  }
-
   factory UserModel.fromMap(Map<String, dynamic> m) {
     final rawChangePass = m['mustChangePassword'] ?? m['must_change_password'];
     bool mustChange = false;
@@ -142,8 +95,8 @@ class UserModel {
     else if (rawChangePass is String) mustChange = rawChangePass == '1' || rawChangePass == 'true';
 
     return UserModel(
-      // SYSTEM ID (Usually user_id = 7)
-      id: m['userId']?.toString() ?? m['id']?.toString() ?? '', 
+      // SYSTEM ID (User ID)
+      id: m['userId']?.toString() ?? m['user_id']?.toString() ?? m['id']?.toString() ?? '', 
       
       email: m['email']?.toString() ?? '',     
       password: '', 
@@ -155,11 +108,11 @@ class UserModel {
       lastName: m['last_name'], 
       nickName: m['nick_name'], 
 
-      // FIX: Mapping the PK explicitly (e.g., 5)
+      // Numeric PK of employees table
       employeeId: m['employee_id']?.toString() ?? m['id']?.toString(), 
 
-      // FIX: Mapping the visible code (e.g., EMP-1001)
-      employeeCode: m['employee_code'], 
+      // Visible code (e.g., EMP-1001)
+      employeeCode: m['employee_code']?.toString() ?? m['employeeId']?.toString(), 
       
       profilePicture: m['profile_picture'],
       salary: double.tryParse(m['salary']?.toString() ?? ''),
@@ -193,6 +146,43 @@ class UserModel {
       reportingManagerName: m['reporting_manager_name'],
       secondaryReportingManager: m['secondary_reporting_manager_id']?.toString(),
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'userId': id,
+      'user_id': id,
+      'email': email,
+      'role': role,
+      'must_change_password': mustChangePassword,
+      'direct_reports_count': directReportsCount,
+      
+      // EMPLOYEES TABLE
+      'employee_id': employeeId,
+      'employee_code': employeeCode,
+      'first_name': firstName,
+      'last_name': lastName,
+      'nick_name': nickName,
+      'profile_picture': profilePicture,
+
+      // OTHER FIELDS
+      'salary': salary,
+      'hourly_rate': employeeHourlyRate,
+      'last_month_commission': lastMonthCommission,
+      'iban': iban,
+      'department': department,
+      'location': location,
+      'designation': designation,
+      'date_of_joining': dateOfJoining,
+      'employment_type': employmentType,
+      'employee_status': employeeStatus,
+      'date_of_birth': dateOfBirth,
+      'gender': gender,
+      'marital_status': maritalStatus,
+      'reporting_manager_id': reportingManager,
+      'secondary_reporting_manager_id': secondaryReportingManager,
+    };
   }
 
   UserModel copyWith({

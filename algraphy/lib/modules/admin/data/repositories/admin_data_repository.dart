@@ -1,5 +1,5 @@
 import 'dart:typed_data';
-import 'package:dio/dio.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/api/api_client.dart';
@@ -84,7 +84,7 @@ class AdminRepository {
     }
   }
 
-  // 4. Create Employee (Handles File Upload)
+// 4. Create Employee (Handles File Upload)
   Future<void> createEmployee(
     UserModel user, {
     String? profilePicPath,
@@ -94,22 +94,34 @@ class AdminRepository {
       final token = await _getToken();
       if (token == null) throw Exception("Unauthorized");
 
-      final Map<String, dynamic> data = user.toMap();
-      FormData formData = FormData.fromMap(data);
+      final Map<String, dynamic> rawData = user.toMap();
+      
+      // Convert to Map<String, String> for http.MultipartRequest
+      final Map<String, String> fields = {};
+      rawData.forEach((key, value) {
+        if (value != null) {
+            fields[key] = value.toString();
+          }
+      });
+      
+      debugPrint("📢 createEmployee Payload: $fields");
+
+      Map<String, String?>? filePaths;
+      Map<String, List<int>?>? fileBytes;
 
       if (kIsWeb && profilePicBytes != null) {
-        formData.files.add(MapEntry(
-          'profile_picture',
-          MultipartFile.fromBytes(profilePicBytes, filename: 'profile.jpg'),
-        ));
+        fileBytes = {'profile_picture': profilePicBytes};
       } else if (!kIsWeb && profilePicPath != null) {
-        formData.files.add(MapEntry(
-          'profile_picture',
-          await MultipartFile.fromFile(profilePicPath, filename: 'profile.jpg'),
-        ));
+        filePaths = {'profile_picture': profilePicPath};
       }
 
-      final response = await _api.post('create_employee', formData as Map<String, dynamic>, token: token);
+      final response = await _api.postMultipart(
+        'create_employee',
+        fields,
+        filePaths: filePaths,
+        fileBytes: fileBytes,
+        token: token,
+      );
 
       if (response['status'] != 'success') {
         throw Exception(response['message'] ?? "Onboarding failed");
@@ -129,24 +141,35 @@ class AdminRepository {
       final token = await _getToken();
       if (token == null) throw Exception("Unauthorized");
 
-      final Map<String, dynamic> data = user.toMap();
-      data['id'] = user.id; 
+      final Map<String, dynamic> rawData = user.toMap();
+      rawData['id'] = user.id; 
 
-      FormData formData = FormData.fromMap(data);
+      // Convert to Map<String, String> for http.MultipartRequest
+      final Map<String, String> fields = {};
+      rawData.forEach((key, value) {
+        if (value != null) {
+            fields[key] = value.toString();
+          }
+      });
+      
+      debugPrint("📢 createEmployee Payload: $fields");
+
+      Map<String, String?>? filePaths;
+      Map<String, List<int>?>? fileBytes;
 
       if (kIsWeb && profilePicBytes != null) {
-        formData.files.add(MapEntry(
-          'profile_picture',
-          MultipartFile.fromBytes(profilePicBytes, filename: 'profile.jpg'),
-        ));
+        fileBytes = {'profile_picture': profilePicBytes};
       } else if (!kIsWeb && profilePicPath != null) {
-        formData.files.add(MapEntry(
-          'profile_picture',
-          await MultipartFile.fromFile(profilePicPath, filename: 'profile.jpg'),
-        ));
+        filePaths = {'profile_picture': profilePicPath};
       }
 
-      final response = await _api.post('update_employee', formData as Map<String, dynamic>, token: token);
+      final response = await _api.postMultipart(
+        'update_employee',
+        fields,
+        filePaths: filePaths,
+        fileBytes: fileBytes,
+        token: token,
+      );
 
       if (response['status'] != 'success') {
         throw Exception(response['message'] ?? "Update failed");

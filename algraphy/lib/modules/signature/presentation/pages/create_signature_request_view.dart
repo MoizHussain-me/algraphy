@@ -8,6 +8,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 
 class CreateSignatureRequestView extends StatefulWidget {
   final List<UserModel> employees;
@@ -27,9 +28,35 @@ class _CreateSignatureRequestViewState extends State<CreateSignatureRequestView>
   double _xPos = 150.0;
   double _yPos = 240.0;
   int _pageNum = 1;
+  DateTime? _expiryDate;
   
   String? _selectedEmployeeId;
   bool _isUploading = false;
+
+  Future<void> _pickExpiryDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(days: 7)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFFDC2726),
+              onPrimary: Colors.white,
+              surface: Color(0xFF1C1C1C),
+              onSurface: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() => _expiryDate = picked);
+    }
+  }
 
   void _pickAndDesignPDF() async {
     final result = await FilePicker.platform.pickFiles(
@@ -113,19 +140,22 @@ class _CreateSignatureRequestViewState extends State<CreateSignatureRequestView>
       // });
 
 
-FormData formData = FormData.fromMap({
-      "employee_id": _selectedEmployeeId,
-      "document_title": _titleCtrl.text.trim(),
-      // CRITICAL: Use .toString() to preserve the decimal (e.g., 0.4567)
-      "x_pos": _xPos.toString(), 
-      "y_pos": _yPos.toString(),
-      "page_num": _pageNum.toString(),
-      "pdf_file": kIsWeb
-          ? MultipartFile.fromBytes(_selectedFile!.bytes!, filename: _selectedFile!.name)
-          : await MultipartFile.fromFile(_selectedFile!.path!, filename: _selectedFile!.name),
-    });
+      final Map<String, dynamic> dataMap = {
+        "employee_id": _selectedEmployeeId,
+        "document_title": _titleCtrl.text.trim(),
+        "x_pos": _xPos.toString(), 
+        "y_pos": _yPos.toString(),
+        "page_num": _pageNum.toString(),
+        "pdf_file": kIsWeb
+            ? MultipartFile.fromBytes(_selectedFile!.bytes!, filename: _selectedFile!.name)
+            : await MultipartFile.fromFile(_selectedFile!.path!, filename: _selectedFile!.name),
+      };
 
+      if (_expiryDate != null) {
+        dataMap["expiry_date"] = DateFormat('yyyy-MM-dd').format(_expiryDate!);
+      }
 
+      final formData = FormData.fromMap(dataMap);
 
       final response = await Dio().post(
         "${AppConstants.apiBaseUrl}?action=create_signature_request",
@@ -196,6 +226,19 @@ FormData formData = FormData.fromMap({
               style: const TextStyle(color: Colors.white),
               decoration: _inputDecoration("Document Title", Icons.title),
               validator: (v) => v!.isEmpty ? "Required" : null,
+            ),
+            const SizedBox(height: 16),
+
+            // Expiry Date Picker
+            InkWell(
+              onTap: _pickExpiryDate,
+              child: InputDecorator(
+                decoration: _inputDecoration("Expiry Date (Optional)", Icons.event),
+                child: Text(
+                  _expiryDate == null ? "No Expiry" : DateFormat('MMM dd, yyyy').format(_expiryDate!),
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
             ),
             const SizedBox(height: 16),
 

@@ -2,9 +2,12 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:algraphy/modules/auth/data/models/user_model.dart';
 import 'package:algraphy/modules/employee/data/employee_repository.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:get_it/get_it.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class AttendanceTimerView extends StatefulWidget {
   final UserModel userName;
@@ -87,6 +90,9 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
   // --- Actions ---
 
   Future<void> _handleClockIn() async {
+    // 1. Check Permissions first
+    if (!await _checkLocationPermission()) return;
+
     setState(() => _isLoading = true);
     try {
       await GetIt.I<EmployeeRepository>().checkIn();
@@ -100,6 +106,8 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
   Future<void> _handleClockOut() async {
     if (_attendanceId == null) return;
     
+    // 1. Check Permissions
+    if (!await _checkLocationPermission()) return;
     // Validate Break Status
     if (_status == 'On Break') {
       _showError("Please Resume Work before Checking Out");
@@ -132,6 +140,72 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
       if (mounted) _showError(e.toString());
       setState(() => _isLoading = false);
     }
+  }
+
+  Future<bool> _checkLocationPermission() async {
+    // 1. Web handling: permission_handler is not fully supported on web.
+    // We use geolocator's native permission check instead.
+    if (kIsWeb) {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.deniedForever) {
+        if (mounted) _showError("Location permissions are permanently denied. Please enable them in your browser settings.");
+        return false;
+      }
+      return permission == LocationPermission.always || permission == LocationPermission.whileInUse;
+    }
+
+    // 2. Mobile handling
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (mounted) _showError("Location services are disabled. Please enable them to continue.");
+      return false;
+    }
+
+    var status = await Permission.locationWhenInUse.status;
+    
+    if (status.isDenied) {
+      status = await Permission.locationWhenInUse.request();
+      if (status.isDenied) {
+        if (mounted) _showError("Location permission is required for attendance.");
+        return false;
+      }
+    }
+
+    if (status.isPermanentlyDenied) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text("Location Permission Required"),
+            content: const Text("Attendance requires location access. Please enable it in app settings."),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+              TextButton(onPressed: () {
+                openAppSettings();
+                Navigator.pop(context);
+              }, child: const Text("Open Settings")),
+            ],
+          ),
+        );
+      }
+      return false;
+    }
+
+    if (status.isGranted) {
+      // PROACTIVELY FETCH POSITION (iOS FIX):
+      // This helps the "Location" toggle appear in iPhone Settings.
+      try {
+        await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.low)
+            .timeout(const Duration(seconds: 3));
+      } catch (_) {
+        // We ignore timeout/errors here as we just want to "trigger" the service
+      }
+    }
+
+    return status.isGranted;
   }
 
   void _showError(String msg) {

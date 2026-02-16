@@ -1,7 +1,9 @@
 import 'package:algraphy/modules/auth/presentation/bloc/auth_event.dart';
 import 'package:algraphy/modules/auth/presentation/bloc/auth_state.dart';
+import 'package:algraphy/core/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../bloc/auth_bloc.dart';
 
 class LoginPage extends StatefulWidget {
@@ -121,6 +123,28 @@ class _LoginPageState extends State<LoginPage> {
                         child: const Text(
                           'Login',
                           style: TextStyle(fontSize: 16, color: Colors.white),
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+                      
+                      // Privacy Policy Link
+                      Center(
+                        child: TextButton(
+                          onPressed: () async {
+                            final url = Uri.parse(AppConstants.privacyPolicyUrl);
+                            if (await canLaunchUrl(url)) {
+                              await launchUrl(url, mode: LaunchMode.externalApplication);
+                            }
+                          },
+                          child: Text(
+                            'Privacy Policy',
+                            style: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 12,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
                         ),
                       ),
                     ],

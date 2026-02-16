@@ -10,6 +10,7 @@ class SignatureRequestModel {
   final String? signedAt;  // Added this
   final String? firstName; // From the JOIN
   final String? lastName;  // From the JOIN
+  final String? expiryDate; // Added this
 
   SignatureRequestModel({
     required this.id,
@@ -23,6 +24,7 @@ class SignatureRequestModel {
     this.signedAt,
     this.firstName,
     this.lastName,
+    this.expiryDate,
   });
 
   factory SignatureRequestModel.fromJson(Map<String, dynamic> json) {
@@ -34,10 +36,11 @@ class SignatureRequestModel {
       signedPath: json['signed_path'],
       token: json['token'] ?? '',
       status: json['status'] ?? 'Pending',
-      createdAt: json['created_at'], // Map from DB column
+      createdAt: json['created_at'],
       signedAt: json['signed_at'],
       firstName: json['first_name'],
       lastName: json['last_name'],
+      expiryDate: json['expiry_date'],
     );
   }
 

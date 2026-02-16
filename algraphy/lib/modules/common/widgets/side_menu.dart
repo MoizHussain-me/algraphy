@@ -122,7 +122,7 @@ class SideMenu extends StatelessWidget {
                   children: [
                     // --- Main Core ---
                     _buildMenuItem(context, icon: Icons.dashboard, label: 'Dashboard', routeName: AppRoutes.home),
-                    _buildMenuItem(context, icon: Icons.access_time, label: 'Attendance', routeName: AppRoutes.attendance),
+                    // _buildMenuItem(context, icon: Icons.access_time, label: 'Attendance', routeName: AppRoutes.attendance),
                     _buildMenuItem(context, icon: Icons.person, label: 'Profile', routeName: AppRoutes.profile),
                     
                     const Divider(color: Colors.white10),

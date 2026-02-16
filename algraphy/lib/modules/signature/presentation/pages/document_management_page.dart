@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:algraphy/core/utils/constants.dart';
 import 'package:algraphy/modules/admin/data/repositories/admin_data_repository.dart';
 import 'package:algraphy/modules/auth/data/models/user_model.dart';
@@ -8,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get_it/get_it.dart';
+import 'package:intl/intl.dart';
 
 class DocumentManagementPage extends StatefulWidget {
   final bool isAdmin;
@@ -31,18 +33,53 @@ class _DocumentManagementPageState extends State<DocumentManagementPage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString(AppConstants.tokenKey);
+      final userJson = prefs.getString(AppConstants.userKey);
+
+      String url = "${AppConstants.apiBaseUrl}?action=get_all_signature_requests";
+
+      // If not admin, we MUST filter by current employee's ID
+      if (!widget.isAdmin) {
+        if (userJson == null) {
+          debugPrint("Fetch Error: No user data found in storage.");
+          setState(() => isLoading = false);
+          return;
+        }
+
+        final Map<String, dynamic> userMap = jsonDecode(userJson);
+        final user = UserModel.fromMap(userMap);
+        
+        // Use employee_id (PK) first, fallback to user_id if needed (though risky)
+        final String? filterId = user.employeeId ?? user.id;
+
+        if (filterId != null && filterId.isNotEmpty) {
+          url += "&employee_id=$filterId";
+          debugPrint("FETCHING DOCS FOR EMPLOYEE: $filterId");
+        } else {
+          debugPrint("Fetch Error: User has no valid employee ID.");
+          setState(() => isLoading = false);
+          return;
+        }
+      } else {
+        debugPrint("FETCHING ALL DOCS (ADMIN VIEW)");
+      }
+
+      debugPrint("CALLING API: $url");
 
       final response = await Dio().get(
-        "${AppConstants.apiBaseUrl}?action=get_all_signature_requests",
+        url,
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
       if (response.data['status'] == 'success') {
-        setState(() {
-          docs = (response.data['data'] as List)
-              .map((e) => SignatureRequestModel.fromJson(e))
-              .toList();
-        });
+        if (mounted) {
+          setState(() {
+            docs = (response.data['data'] as List)
+                .map((e) => SignatureRequestModel.fromJson(e))
+                .toList();
+          });
+        }
+      } else {
+        debugPrint("API Fail: ${response.data['message']}");
       }
     } catch (e) {
       debugPrint("Fetch Error: $e");
@@ -131,24 +168,40 @@ class _DocumentManagementPageState extends State<DocumentManagementPage> {
               itemBuilder: (context, index) {
                 final doc = docs[index];
                 final bool isSigned = doc.status == 'Signed';
+                final bool isExpired = doc.expiryDate != null && 
+                                      DateTime.parse(doc.expiryDate!).isBefore(DateTime.now().subtract(const Duration(days: 0))) &&
+                                      !isSigned;
 
                 return Card(
                   color: const Color(0xFF1C1C1C),
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: isExpired ? const BorderSide(color: Colors.red, width: 1) : BorderSide.none,
+                  ),
                   child: ListTile(
                     leading: Icon(
                       Icons.picture_as_pdf, 
-                      color: isSigned ? Colors.green : Colors.red,
+                      color: isSigned ? Colors.green : (isExpired ? Colors.grey : Colors.red),
                       size: 32,
                     ),
                     title: Text(
                       doc.documentTitle, 
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
                     ),
-                    subtitle: Text(
-                      "Status: ${doc.status}", 
-                      style: TextStyle(color: isSigned ? Colors.green : Colors.orange)
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Status: ${isExpired ? 'Expired' : doc.status}", 
+                          style: TextStyle(color: isSigned ? Colors.green : (isExpired ? Colors.red : Colors.orange), fontSize: 12)
+                        ),
+                        if (doc.expiryDate != null)
+                          Text(
+                            "Expires: ${DateFormat('MMM dd, yyyy').format(DateTime.parse(doc.expiryDate!))}",
+                            style: TextStyle(color: isExpired ? Colors.red.withOpacity(0.7) : Colors.grey, fontSize: 11),
+                          ),
+                      ],
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -162,8 +215,8 @@ class _DocumentManagementPageState extends State<DocumentManagementPage> {
                           ),
                         ),
                         
-                        // SIGN BUTTON (Only for employees on pending docs)
-                        if (doc.status == 'Pending' && !widget.isAdmin)
+                        // SIGN BUTTON (Only for employees on pending/non-expired docs)
+                        if (doc.status == 'Pending' && !widget.isAdmin && !isExpired)
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFDC2726),

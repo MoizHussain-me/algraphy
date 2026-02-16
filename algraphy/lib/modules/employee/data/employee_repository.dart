@@ -114,7 +114,7 @@ class EmployeeRepository {
   }
 
   // 2. Apply for Leave
-  Future<void> applyLeave(Map<String, String> leaveData) async {
+  Future<void> applyLeave(Map<String, dynamic> leaveData) async {
     final token = await _getToken();
     if (token == null) throw Exception("Not authenticated");
 
@@ -123,6 +123,20 @@ class EmployeeRepository {
 
     if (response['status'] != 'success') {
       throw Exception(response['message'] ?? "Failed to apply for leave");
+    }
+  }
+
+  // 3. Get Employee List (For To/CC Pickers)
+  Future<List<Map<String, dynamic>>> getEmployeeList() async {
+    final token = await _getToken();
+    if (token == null) throw Exception("Not authenticated");
+
+    final response = await _api.get('get_employee_list', token: token);
+
+    if (response['status'] == 'success') {
+      return List<Map<String, dynamic>>.from(response['data']);
+    } else {
+      throw Exception(response['message'] ?? "Failed to fetch employees");
     }
   }
 

@@ -5,6 +5,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/services/logger_service.dart';
 
 class DashboardView extends StatefulWidget {
   final UserModel currentUser;
@@ -43,6 +44,8 @@ class _DashboardViewState extends State<DashboardView> {
       if (isAdmin) {
         // --- ADMIN DATA FETCH ---
         final data = await GetIt.I<AdminRepository>().getAdminStats();
+        logger.i("Admin Dash Data $data");
+   
         
         if (mounted) {
           setState(() {
@@ -77,7 +80,7 @@ class _DashboardViewState extends State<DashboardView> {
                _weeklyChartData = {};
             }
 
-            _recentActivities = data['recent'] ?? [];
+            _recentActivities = data['recent_activity'] ?? [];
             _isLoading = false;
           });
         }
@@ -319,7 +322,7 @@ class _DashboardViewState extends State<DashboardView> {
   Widget _buildAdminActivityItem(Map<String, dynamic> log, {bool isFirst = false, bool isLast = false}) {
     final name = log['name'] ?? 'Unknown';
     final type = log['type'] ?? 'Activity';
-    final rawTime = log['check_in']; // Get raw value
+    final rawTime = log['clock_in'] ?? log['check_in']; // Get raw value and fallback
 
     // CRITICAL FIX: Handle Null or Empty check_in
     if (rawTime == null || rawTime.toString().isEmpty) {

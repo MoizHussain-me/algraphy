@@ -30,6 +30,15 @@
     <string>Algraphy requires access to your location to verify your clock-in and clock-out points for attendance records.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>Algraphy requires your location to ensure accurate attendance tracking even when the app is in the background.</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>Algraphy requires your location to ensure accurate attendance tracking even when the app is in the background.</string>
+
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>location</string>
+        <string>fetch</string>
+        <string>remote-notification</string>
+    </array>
 
     <!-- 2. PROFILE & SIGNATURE: Camera/Photo Permissions -->
     <key>NSCameraUsageDescription</key>

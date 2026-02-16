@@ -2,9 +2,12 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:algraphy/core/utils/constants.dart';
 import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:signature/signature.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class SignatureViewPage extends StatefulWidget {
   final String token; 
@@ -22,9 +25,59 @@ class _SignatureViewPageState extends State<SignatureViewPage> {
   );
 
   bool _isSubmitting = false;
+  Uint8List? _uploadedSignature;
+
+  Future<void> _pickSignatureImage() async {
+    // 1. Check Photos Permission (Mobile Only)
+    if (!kIsWeb) {
+      var status = await Permission.photos.status;
+      if (status.isDenied) {
+        status = await Permission.photos.request();
+        if (status.isDenied) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Photo library access is required to upload a signature.")),
+            );
+          }
+          return;
+        }
+      }
+
+      if (status.isPermanentlyDenied) {
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text("Photos Permission Required"),
+              content: const Text("Please enable photo library access in settings to upload your signature."),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+                TextButton(onPressed: () {
+                  openAppSettings();
+                  Navigator.pop(context);
+                }, child: const Text("Settings")),
+              ],
+            ),
+          );
+        }
+        return;
+      }
+    }
+
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+    );
+    if (result != null && result.files.single.bytes != null) {
+      setState(() {
+        _uploadedSignature = result.files.single.bytes;
+        _controller.clear(); // Clear drawing if image is uploaded
+      });
+    }
+  }
 
   Future<void> _submitSignature() async {
-    if (_controller.isEmpty) {
+    if (_controller.isEmpty && _uploadedSignature == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please provide a signature first")),
       );
@@ -34,7 +87,13 @@ class _SignatureViewPageState extends State<SignatureViewPage> {
     setState(() => _isSubmitting = true);
 
     try {
-      final Uint8List? signatureBytes = await _controller.toPngBytes();
+      Uint8List? signatureBytes;
+      if (_uploadedSignature != null) {
+        signatureBytes = _uploadedSignature;
+      } else {
+        signatureBytes = await _controller.toPngBytes();
+      }
+
       if (signatureBytes == null) return;
 
       final String base64Signature = base64Encode(signatureBytes);
@@ -109,7 +168,7 @@ class _SignatureViewPageState extends State<SignatureViewPage> {
       ),
       // Compact Bottom Navigation for Signature
       bottomNavigationBar: Container(
-        height: 200, // Reduced from 250 for a more compact layout
+        height: 230, // Increased to accommodate upload button
         color: const Color(0xFF1C1C1C),
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         child: Column(
@@ -117,30 +176,48 @@ class _SignatureViewPageState extends State<SignatureViewPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text("Draw Signature", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                TextButton(
-                  onPressed: () => _controller.clear(),
-                  style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-                  child: const Text("Clear", style: TextStyle(color: Colors.grey, fontSize: 13)),
+                Text(
+                  _uploadedSignature != null ? "Uploaded Signature" : "Draw Signature", 
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)
+                ),
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: _pickSignatureImage,
+                      style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                      child: const Text("Upload Image", style: TextStyle(color: Color(0xFFDC2726), fontSize: 13)),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() => _uploadedSignature = null);
+                        _controller.clear();
+                      },
+                      style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                      child: const Text("Clear", style: TextStyle(color: Colors.grey, fontSize: 13)),
+                    ),
+                  ],
                 ),
               ],
             ),
             Expanded(
               child: Container(
+                width: double.infinity,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Signature(
-                  controller: _controller,
-                  backgroundColor: Colors.white,
-                ),
+                child: _uploadedSignature != null
+                  ? Image.memory(_uploadedSignature!, fit: BoxFit.contain)
+                  : Signature(
+                      controller: _controller,
+                      backgroundColor: Colors.white,
+                    ),
               ),
             ),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-              height: 44, // Slightly more compact button
+              height: 44,
               child: ElevatedButton(
                 onPressed: _isSubmitting ? null : _submitSignature,
                 style: ElevatedButton.styleFrom(

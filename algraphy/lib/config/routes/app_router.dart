@@ -8,6 +8,7 @@ import 'package:algraphy/modules/signature/presentation/bloc/signature_bloc.dart
 import 'package:algraphy/modules/signature/presentation/pages/signature_view_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/foundation.dart' show kIsWeb; // Key for Platform check
 import '../../modules/auth/data/models/user_model.dart';
 import '../../modules/auth/presentation/bloc/auth_bloc.dart';
 import '../../modules/employee/presentation/pages/attendance_page.dart';
@@ -85,13 +86,42 @@ class AppRouter {
       case AppRoutes.employees:
         return _buildProtectedPage(
           settings: settings,
-          builder: (user) => MainScaffold(
-            title: 'Employees',
-            currentRoute: AppRoutes.employees,
-            currentUser: user,
-            // Pass the role check here
-            body: EmployeeManagementPage(isAdmin: user.role == 'admin'),
-          ),
+          builder: (user) {
+            // RESTRICTION: Only Admin AND Web
+            if (kIsWeb && user.role == 'admin') {
+              return MainScaffold(
+                title: 'Employees',
+                currentRoute: AppRoutes.employees,
+                currentUser: user,
+                body: EmployeeManagementPage(isAdmin: true),
+              );
+            } else {
+              // Access Denied Fallback
+              return MainScaffold(
+                title: 'Employees',
+                currentRoute: AppRoutes.employees,
+                currentUser: user,
+                body: const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.lock_clock, size: 64, color: Colors.grey),
+                      SizedBox(height: 16),
+                      Text(
+                        "Access Restricted",
+                        style: TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        "This section is only available to Administrators on Web.",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+          },
         );
 
       case AppRoutes.chats:
