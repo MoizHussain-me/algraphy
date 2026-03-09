@@ -17,26 +17,23 @@ class LoginRequested extends AuthEvent {
   LoginRequested(this.email, this.password);
 }
 
-class TalentLoginRequested extends AuthEvent {
-  final String email;
-  final String password;
-
-  TalentLoginRequested(this.email, this.password);
-}
-
-class TalentSignupRequested extends AuthEvent {
+class ClientSignupRequested extends AuthEvent {
   final String name;
   final String email;
   final String password;
-  final String userType;
-  final String talentType;
+  final String phone;
+  final String companyName;
+  final String industry;
+  final String servicesNeeded;
 
-  TalentSignupRequested({
+  ClientSignupRequested({
     required this.name,
     required this.email,
     required this.password,
-    required this.userType,
-    required this.talentType,
+    required this.phone,
+    required this.companyName,
+    required this.industry,
+    required this.servicesNeeded,
   });
 }
 

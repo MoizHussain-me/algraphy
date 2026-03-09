@@ -18,41 +18,23 @@ class _LoginPageState extends State<LoginPage> {
   // Unified Controllers
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  // Client Signup Specific
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _companyController = TextEditingController();
   
-  // Signup specific
-  final _talentNameController = TextEditingController();
-  final List<Map<String, String>> _userTypes = [
-    {'label': 'Select User Type', 'value': ''},
-    {'label': 'Talent', 'value': 'Talent'},
-    {'label': 'Talent Manager / UGC Manager', 'value': 'Talent Manager'},
-    {'label': 'Client / Customer', 'value': 'Client'},
-    {'label': 'Supplier / Vendor', 'value': 'Supplier'},
-    {'label': 'AlGraphy Pro Team', 'value': 'AlGraphy Pro Team'},
+  bool _isClientSignup = false;
+  String _selectedIndustry = '';
+  String _selectedService = '';
+
+  final List<String> _industries = [
+    '', 'E-commerce', 'Real Estate', 'Technology / Software', 'Food & Beverage', 'Fashion & Apparel', 'Healthcare', 'Education', 'Media & Entertainment', 'Other'
   ];
 
-  final List<Map<String, String>> _talentSpecificTypes = [
-    {'label': 'Select Talent Type', 'value': ''},
-    {'label': 'Model/Cast/Usher', 'value': 'Model/Cast/Usher'},
-    {'label': 'Vocal/Voice-over', 'value': 'Vocal/Voice-over'},
-    {'label': 'Influencer/Celebrity/UGC', 'value': 'Influencer/Celebrity/UGC'},
-    {'label': 'Musician/Solo/Band', 'value': 'Musician/Solo/Band'},
-    {'label': 'Media/Photographer/Videographer/Video Editor/Director', 'value': 'Media/Photographer/Videographer/Video Editor/Director'},
-    {'label': 'Designer/Graphic/Motion/3D Modeling', 'value': 'Designer/Graphic/Motion/3D Modeling'},
-    {'label': 'Interior & Exterior/2D Design/3D Design', 'value': 'Interior & Exterior/2D Design/3D Design'},
-    {'label': 'Marketing/Social Media Specialist', 'value': 'Marketing/Social Media Specialist'},
-    {'label': 'Content Writer', 'value': 'Content Writer'},
-    {'label': 'Journalism/Magazines', 'value': 'Journalism/Magazines'},
-    {'label': 'Media Buying/E-commerce', 'value': 'Media Buying/E-commerce'},
-    {'label': 'Website/App Developer', 'value': 'Website/App Developer'},
-    {'label': 'Sales Specialist / Sales Director', 'value': 'Sales Specialist / Sales Director'},
-    {'label': 'HR Specialist / HR Operations / HR Director', 'value': 'HR Specialist / HR Operations / HR Director'},
-    {'label': 'Executive Assistant', 'value': 'Executive Assistant'},
-    {'label': 'Accountant', 'value': 'Accountant'},
+  final List<String> _services = [
+    '', 'Photography & Videography', 'Social Media Management', 'Brand Identity & Design', 'Web & App Development', 'Advertising & Media Buying', 'Talent Casting & Influencer Marketing', 'Other'
   ];
-
-  String _selectedTalentType = '';
-  String _selectedSpecificTalentType = '';
-  bool _isTalentSignup = false;
 
   final _formKey = GlobalKey<FormState>();
   bool _isPasswordVisible = false;
@@ -61,7 +43,9 @@ class _LoginPageState extends State<LoginPage> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _talentNameController.dispose();
+    _nameController.dispose();
+    _phoneController.dispose();
+    _companyController.dispose();
     super.dispose();
   }
 
@@ -75,12 +59,19 @@ class _LoginPageState extends State<LoginPage> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.message), backgroundColor: Colors.red),
             );
-          } else if (state is AuthTalentRedirect) {
-            Navigator.pushNamed(
-              context,
-              AppRoutes.talentPortal,
-              arguments: {'url': state.url},
+          }
+          if (state is ClientSignupSuccess) {
+             ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Registration Request Submitted Successfully! Please login.'), 
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 4),
+              ),
             );
+            // Toggle back to login mode
+            setState(() {
+              _isClientSignup = false;
+            });
           }
         },
         builder: (context, state) {
@@ -169,53 +160,61 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          _isTalentSignup ? 'Join our creative community' : 'Sign in to your account',
+        const Text(
+          'Sign in to your account',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 16,
-            color: Colors.grey[500],
+            color: Colors.grey,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildUnifiedForm() {
+  Widget _buildUnifiedForm() { // This method was missing and has been added.
     return Form(
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (_isTalentSignup) ...[
+          if (_isClientSignup) ...[
             TextFormField(
-              controller: _talentNameController,
+              controller: _nameController,
               style: const TextStyle(color: Colors.white),
               decoration: _inputDecoration('Full Name', Icons.person_outline_rounded),
-              validator: (value) => value!.isEmpty ? 'Enter name' : null,
+              validator: (value) => value!.isEmpty ? 'Enter your name' : null,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _phoneController,
+              style: const TextStyle(color: Colors.white),
+              keyboardType: TextInputType.phone,
+              decoration: _inputDecoration('Phone Number', Icons.phone_outlined),
+              validator: (value) => value!.isEmpty ? 'Enter phone number' : null,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _companyController,
+              style: const TextStyle(color: Colors.white),
+              decoration: _inputDecoration('Company / Brand Name', Icons.business_outlined),
+              validator: (value) => value!.isEmpty ? 'Enter company name' : null,
             ),
             const SizedBox(height: 16),
             _buildDropdown(
-              value: _selectedTalentType,
-              items: _userTypes,
-              onChanged: (val) {
-                setState(() {
-                  _selectedTalentType = val;
-                  if (val != 'Talent') _selectedSpecificTalentType = '';
-                });
-              },
+              value: _selectedIndustry,
+              items: _industries.map((e) => {'label': e.isEmpty ? 'Select Industry' : e, 'value': e}).toList(),
+              onChanged: (val) => setState(() => _selectedIndustry = val),
             ),
-            if (_selectedTalentType == 'Talent') ...[
-              const SizedBox(height: 16),
-              _buildDropdown(
-                value: _selectedSpecificTalentType,
-                items: _talentSpecificTypes,
-                onChanged: (val) => setState(() => _selectedSpecificTalentType = val),
-              ),
-            ],
+            const SizedBox(height: 16),
+            _buildDropdown(
+              value: _selectedService,
+              items: _services.map((e) => {'label': e.isEmpty ? 'Select Service Needed' : e, 'value': e}).toList(),
+              onChanged: (val) => setState(() => _selectedService = val),
+            ),
             const SizedBox(height: 16),
           ],
-          TextFormField(
+          TextFormField( // This TextFormField was missing in the original document.
             controller: _emailController,
             style: const TextStyle(color: Colors.white),
             decoration: _inputDecoration('Email Address', Icons.alternate_email),
@@ -242,25 +241,23 @@ class _LoginPageState extends State<LoginPage> {
           _buildSubmitButton(
             onPressed: () {
               if (_formKey.currentState!.validate()) {
-                if (_isTalentSignup) {
-                  if (_selectedTalentType.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Please select a user type"), backgroundColor: Colors.orange),
-                    );
+                if (_isClientSignup) {
+                  if (_selectedIndustry.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select an industry'), backgroundColor: Colors.orange));
                     return;
                   }
-                  if (_selectedTalentType == 'Talent' && _selectedSpecificTalentType.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Please select a talent type"), backgroundColor: Colors.orange),
-                    );
+                  if (_selectedService.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a service'), backgroundColor: Colors.orange));
                     return;
                   }
-                  context.read<AuthBloc>().add(TalentSignupRequested(
-                    name: _talentNameController.text.trim(),
+                  context.read<AuthBloc>().add(ClientSignupRequested(
+                    name: _nameController.text.trim(),
                     email: _emailController.text.trim(),
                     password: _passwordController.text,
-                    userType: _selectedTalentType,
-                    talentType: _selectedTalentType == 'Talent' ? _selectedSpecificTalentType : _selectedTalentType,
+                    phone: _phoneController.text.trim(),
+                    companyName: _companyController.text.trim(),
+                    industry: _selectedIndustry,
+                    servicesNeeded: _selectedService,
                   ));
                 } else {
                   context.read<AuthBloc>().add(LoginRequested(
@@ -270,19 +267,19 @@ class _LoginPageState extends State<LoginPage> {
                 }
               }
             },
-            label: _isTalentSignup ? 'Create Account' : 'Sign In',
+            label: _isClientSignup ? 'Submit Request' : 'Sign In',
           ),
           const SizedBox(height: 16),
           TextButton(
-            onPressed: () => setState(() => _isTalentSignup = !_isTalentSignup),
+            onPressed: () => setState(() => _isClientSignup = !_isClientSignup),
             style: TextButton.styleFrom(foregroundColor: Colors.grey),
             child: RichText(
               text: TextSpan(
                 style: const TextStyle(fontSize: 14, color: Colors.grey),
                 children: [
-                  TextSpan(text: _isTalentSignup ? 'Already a member? ' : 'New talent? '),
+                  TextSpan(text: _isClientSignup ? 'Already a Client? ' : 'New to Algraphy Pro? '),
                   TextSpan(
-                    text: _isTalentSignup ? 'Login' : 'Register now',
+                    text: _isClientSignup ? 'Login here' : 'Become a Client',
                     style: const TextStyle(color: Color(0xFFDC2726), fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -324,6 +321,8 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
+
+
 
   Widget _buildDropdown({
     required String value,

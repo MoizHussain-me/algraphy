@@ -40,6 +40,49 @@ class AuthRepository {
     }
   }
 
+  // --- CLIENT SIGNUP ---
+  Future<UserModel> signupClient({
+    required String name,
+    required String email,
+    required String password,
+    required String phone,
+    required String companyName,
+    required String industry,
+    required String servicesNeeded,
+  }) async {
+    logger.i("AUTH: Attempting Client Signup for $email");
+
+    final response = await _api.post('client_signup', {
+      'name': name,
+      'email': email,
+      'password': password,
+      'phone': phone,
+      'company_name': companyName,
+      'industry': industry,
+      'services_needed': servicesNeeded,
+    });
+
+    if (response['status'] == 'success') {
+      final userData = response['user'];
+      final token = response['token'];
+
+      if (userData == null) {
+        throw Exception("Server Error: Signup successful but no user data returned.");
+      }
+
+      final userMap = Map<String, dynamic>.from(userData);
+      final user = UserModel.fromMap(userMap);
+
+      // We DON'T save session here anymore because 
+      // the user wants them redirected to login screen
+      
+      logger.i("AUTH: Client Signup successful.");
+      return user;
+    } else {
+      throw Exception(response['message'] ?? 'Signup failed');
+    }
+  }
+
   // --- SESSION MANAGEMENT ---
   
   Future<void> _saveSession(UserModel user, String token) async {
@@ -120,50 +163,5 @@ class AuthRepository {
     await prefs.remove(AppConstants.userKey);
   }
 
-  // --- TALENT ACTIONS ---
-  
-  static const String talentBaseUrl = "https://al-graphy.com/talents/api/auth.php";
 
-  Future<Map<String, dynamic>> loginTalent(String email, String password) async {
-    logger.i("AUTH: Attempting Talent login for $email");
-    
-    final response = await _api.postRaw(talentBaseUrl, {
-      'action': 'login',
-      'email': email,
-      'password': password,
-    });
-
-    if (response['status'] == 'success') {
-      logger.i("AUTH: Talent login successful.");
-      return response['data']; // Contains webview_url
-    } else {
-      throw Exception(response['message'] ?? 'Talent login failed');
-    }
-  }
-
-  Future<Map<String, dynamic>> signupTalent({
-    required String name,
-    required String email,
-    required String password,
-    required String userType,
-    required String talentType,
-  }) async {
-    logger.i("AUTH: Attempting Talent signup for $email");
-
-    final response = await _api.postRaw(talentBaseUrl, {
-      'action': 'signup',
-      'name': name,
-      'email': email,
-      'password': password,
-      'user_type': userType,
-      'talent_type': talentType,
-    });
-
-    if (response['status'] == 'success') {
-      logger.i("AUTH: Talent signup successful.");
-      return response['data']; // Contains webview_url
-    } else {
-      throw Exception(response['message'] ?? 'Talent signup failed');
-    }
-  }
 }

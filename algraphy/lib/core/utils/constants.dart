@@ -4,7 +4,9 @@ class AppConstants {
   // Use 'http://localhost/algraphy_api/routes/api.php' for iOS Simulator / Web
   // Use 'http://YOUR_PC_IP/algraphy_api/routes/api.php' for Real Device
   //static const String apiBaseUrl = "http://localhost/algraphy_api/routes/api.php";
-  static const String apiBaseUrl = "https://al-graphy.site/algraphy_api/routes/api.php";
+  static const String apiBaseUrl = "http://192.168.100.149/algraphy_api/routes/api.php";
+  //static const String apiBaseUrl = "https://al-graphy.site/algraphy_api/routes/api.php";
+ 
   static const String privacyPolicyUrl = "https://al-graphy.site/algraphy_api/privacy-policy";
 
   // 2. Storage Keys

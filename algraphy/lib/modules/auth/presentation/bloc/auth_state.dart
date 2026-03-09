@@ -18,7 +18,4 @@ class AuthFailure extends AuthState {
   AuthFailure(this.message);
 }
 
-class AuthTalentRedirect extends AuthState {
-  final String url;
-  AuthTalentRedirect(this.url);
-}
+class ClientSignupSuccess extends AuthState {}

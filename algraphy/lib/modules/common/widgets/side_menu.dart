@@ -120,30 +120,29 @@ class SideMenu extends StatelessWidget {
                 child: ListView(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   children: [
-                    // --- Main Core ---
-                    _buildMenuItem(context, icon: Icons.dashboard, label: 'Dashboard', routeName: AppRoutes.home),
-                    // _buildMenuItem(context, icon: Icons.access_time, label: 'Attendance', routeName: AppRoutes.attendance),
-                    _buildMenuItem(context, icon: Icons.person, label: 'Profile', routeName: AppRoutes.profile),
+                    // --- Main Core (Visible to All) ---
+                    _buildMenuItem(context, icon: Icons.dashboard, label: 'Algraphy Pro', routeName: AppRoutes.home),
+                    _buildMenuItem(context, icon: Icons.task_alt, label: 'Tasks', routeName: AppRoutes.tasks),
                     
-                    const Divider(color: Colors.white10),
-                    
-                    // --- Organization / Modules (Coming Soon) ---
-                    _buildMenuItem(context, icon: Icons.business, label: 'Algraphy Pro', routeName: AppRoutes.algraphyPro),
-                    _buildMenuItem(context, icon: Icons.chat, label: 'Chats', routeName: AppRoutes.chats),
-                    _buildMenuItem(context, icon: Icons.work, label: 'Work', routeName: AppRoutes.work),
-                    _buildMenuItem(context, icon: Icons.article, label: 'Plans', routeName: AppRoutes.plans),
-                    _buildMenuItem(context, icon: Icons.emoji_people, label: 'Talents', routeName: AppRoutes.talents),
+                    if (currentUser.role != 'client') ...[
+                      const Divider(color: Colors.white10),
+                      // --- Organization / Modules (Internal Only) ---
+                      _buildMenuItem(context, icon: Icons.chat, label: 'Chats', routeName: AppRoutes.chats),
+                      _buildMenuItem(context, icon: Icons.work, label: 'Work', routeName: AppRoutes.work),
+                      _buildMenuItem(context, icon: Icons.article, label: 'Plans', routeName: AppRoutes.plans),
+                      _buildMenuItem(context, icon: Icons.emoji_people, label: 'Talents', routeName: AppRoutes.talents),
+                    ],
                     
                     const Divider(color: Colors.white10),
 
-                    // --- Info & Support ---
+                    // --- Info & Support (Visible to All) ---
                     _buildMenuItem(context, icon: Icons.miscellaneous_services, label: 'Services', routeName: AppRoutes.services),
                     _buildMenuItem(context, icon: Icons.info, label: 'About', routeName: AppRoutes.about),
                     _buildMenuItem(context, icon: Icons.contact_mail, label: 'Contact', routeName: AppRoutes.contact),
                     _buildMenuItem(context, icon: Icons.settings, label: 'Settings', routeName: AppRoutes.settings),
 
-                    // --- Admin Section (Only for Admin) ---
-                    if (currentUser.role == 'admin') ...[
+                    // --- Admin Section (Only for Admin/Manager) ---
+                    if (currentUser.role == 'admin' || currentUser.role == 'manager') ...[
                       const Divider(color: Colors.white10),
                       Padding(
                         padding: const EdgeInsets.only(left: 16, top: 8, bottom: 4),

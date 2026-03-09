@@ -72,7 +72,7 @@ class UserModel {
     this.reportingManager, this.reportingManagerName, this.secondaryReportingManager,
   });
 
-  bool get isManager => role == 'admin' || directReportsCount > 0;
+  bool get isManager => role == 'admin' || role == 'manager' || directReportsCount > 0;
 
   String get calculatedAge {
     if (dateOfBirth == null || dateOfBirth!.isEmpty) return "";
@@ -104,8 +104,8 @@ class UserModel {
       mustChangePassword: mustChange,
       directReportsCount: int.tryParse(m['direct_reports_count']?.toString() ?? '0') ?? 0,
       
-      firstName: m['first_name'], 
-      lastName: m['last_name'], 
+      firstName: m['first_name'] ?? m['name'], 
+      lastName: m['last_name'] ?? '', 
       nickName: m['nick_name'], 
 
       // Numeric PK of employees table

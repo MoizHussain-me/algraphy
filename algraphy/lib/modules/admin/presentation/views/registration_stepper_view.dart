@@ -134,7 +134,7 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
     
     // FIX: Normalize role to lowercase to match dropdown values
     String incomingRole = (user.role).toLowerCase();
-    if (['employee', 'admin'].contains(incomingRole)) {
+    if (['employee', 'manager', 'admin'].contains(incomingRole)) {
       _systemRole = incomingRole;
     } else {
       _systemRole = 'employee'; // Fallback to prevent dropdown crash
@@ -327,7 +327,7 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
           const SizedBox(height: 16),
           _buildTwoColumnRow(
              _customTextField("Work Email", _emailCtrl, isRequired: true, icon: Icons.email, validator: _validateEmail),
-             _customDropdown("System Access", ["employee", "admin"], (val) => setState(() => _systemRole = val ?? "employee"), isRequired: true)
+             _customDropdown("System Access", ["employee", "manager", "admin"], (val) => setState(() => _systemRole = val ?? "employee"), isRequired: true)
           ),
           const SizedBox(height: 16), 
           _customTextField("Job Description", _jobDescCtrl, maxLines: 2),
@@ -416,7 +416,18 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
     return DropdownButtonFormField<String>(value: initialVal, dropdownColor: const Color(0xFF2C2C2C), validator: isRequired ? (val) => val == null ? 'Required' : null : null, style: const TextStyle(color: Colors.white), decoration: InputDecoration(labelText: label, labelStyle: const TextStyle(color: Colors.grey), filled: true, fillColor: const Color(0xFF2C2C2C), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)), items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(), onChanged: onChanged);
   }
   Widget _employeeDropdown(String label, String? selectedId, Function(String?) onChanged) {
-    final Set<String> seenIds = {}; final List<DropdownMenuItem<String>> dropdownItems = []; for (var emp in _employeeList) { if (!seenIds.contains(emp.id)) { seenIds.add(emp.id); dropdownItems.add(DropdownMenuItem(value: emp.id, child: Text(emp.fullName.isNotEmpty ? emp.fullName : emp.email))); } } String? validSelectedId = selectedId; if (validSelectedId != null && !seenIds.contains(validSelectedId)) validSelectedId = null; return DropdownButtonFormField<String>(value: validSelectedId, dropdownColor: const Color(0xFF2C2C2C), style: const TextStyle(color: Colors.white), decoration: InputDecoration(labelText: label, labelStyle: const TextStyle(color: Colors.grey), filled: true, fillColor: const Color(0xFF2C2C2C), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)), items: dropdownItems, onChanged: onChanged);
+    final Set<String> seenIds = {}; 
+    final List<DropdownMenuItem<String>> dropdownItems = []; 
+    for (var emp in _employeeList) { 
+      // Only show admins and managers in the reporting manager dropdown
+      if ((emp.role == 'admin' || emp.role == 'manager') && !seenIds.contains(emp.id)) { 
+        seenIds.add(emp.id); 
+        dropdownItems.add(DropdownMenuItem(value: emp.id, child: Text(emp.fullName.isNotEmpty ? emp.fullName : emp.email))); 
+      } 
+    } 
+    String? validSelectedId = selectedId; 
+    if (validSelectedId != null && !seenIds.contains(validSelectedId)) validSelectedId = null; 
+    return DropdownButtonFormField<String>(value: validSelectedId, dropdownColor: const Color(0xFF2C2C2C), style: const TextStyle(color: Colors.white), decoration: InputDecoration(labelText: label, labelStyle: const TextStyle(color: Colors.grey), filled: true, fillColor: const Color(0xFF2C2C2C), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)), items: dropdownItems, onChanged: onChanged);
   }
   Widget _buildCustomStepperHeader() { return SingleChildScrollView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 16), child: Row(children: List.generate(_totalSteps, (index) { bool isActive = index == _currentStep; bool isCompleted = index < _currentStep; return Row(children: [AnimatedContainer(duration: const Duration(milliseconds: 300), width: 36, height: 36, decoration: BoxDecoration(shape: BoxShape.circle, color: isActive || isCompleted ? const Color(0xFFDC2726) : Colors.transparent, border: Border.all(color: isActive || isCompleted ? const Color(0xFFDC2726) : Colors.grey, width: 2)), child: Center(child: isCompleted ? const Icon(Icons.check, color: Colors.white, size: 20) : Text("${index + 1}", style: TextStyle(color: isActive ? Colors.white : Colors.grey, fontWeight: FontWeight.bold)))), const SizedBox(width: 8), if (isActive) Text(_stepTitles[index], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)), if (index < _totalSteps - 1) Container(width: 40, height: 2, margin: const EdgeInsets.symmetric(horizontal: 8), color: isCompleted ? const Color(0xFFDC2726) : Colors.grey[800])]); }))); }
   Widget _buildBottomNavigation() { return Container(padding: const EdgeInsets.all(16), color: const Color(0xFF080808), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [if (_currentStep > 0) OutlinedButton(onPressed: () => setState(() => _currentStep--), style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.grey), padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12)), child: const Text("Back", style: TextStyle(color: Colors.white))) else const SizedBox(), ElevatedButton(onPressed: () => _currentStep < _totalSteps - 1 ? setState(() => _currentStep++) : _submitOnboarding(), style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDC2726), padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12)), child: Text(widget.userToEdit != null ? "Update" : (_currentStep == _totalSteps - 1 ? "Finish" : "Next"), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))])); }

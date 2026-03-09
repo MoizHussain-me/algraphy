@@ -11,10 +11,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/foundation.dart' show kIsWeb; // Key for Platform check
 import '../../modules/auth/data/models/user_model.dart';
 import '../../modules/auth/presentation/bloc/auth_bloc.dart';
+import '../../modules/client/presentation/pages/client_dashboard_page.dart';
+import '../../modules/client/presentation/pages/pending_dashboard_page.dart';
 import '../../modules/employee/presentation/pages/attendance_page.dart';
 import '../../modules/common/widgets/main_scaffold.dart';
 import '../../modules/common/widgets/coming_soon_page.dart';
-import '../../modules/auth/presentation/pages/talent_webview_page.dart';
 import 'app_routes.dart';
 
 class AppRouter {
@@ -26,12 +27,25 @@ class AppRouter {
       case AppRoutes.home:
         return _buildProtectedPage(
           settings: settings,
-          builder: (user) => MainScaffold(
-            title: 'Dashboard',
-            currentRoute: AppRoutes.home,
-            currentUser: user,
-            body: AttendancePage(currentUser: user),
-          ),
+          builder: (user) {
+            // Route based on role
+            if (user.role == 'Client' || user.role == 'client') {
+              return MainScaffold(
+                title: 'Client Dashboard',
+                currentRoute: AppRoutes.home,
+                currentUser: user,
+                body: ClientDashboardPage(currentUser: user),
+              );
+            }
+            
+            // Default for employees/admins
+            return MainScaffold(
+              title: 'Dashboard',
+              currentRoute: AppRoutes.home,
+              currentUser: user,
+              body: AttendancePage(currentUser: user),
+            );
+          },
         );
 
       // -----------------------------------------------------------------------
@@ -88,12 +102,13 @@ class AppRouter {
         return _buildProtectedPage(
           settings: settings,
           builder: (user) {
-            // RESTRICTION: Only Admin AND Web
-            if (kIsWeb && user.role == 'admin') {
+            // RESTRICTION: Only Admin/Manager AND Web
+            if (kIsWeb && (user.role == 'admin' || user.role == 'manager')) {
               return MainScaffold(
                 title: 'Employees',
                 currentRoute: AppRoutes.employees,
                 currentUser: user,
+                // Pass true for isAdmin so they see the Onboarding tab
                 body: EmployeeManagementPage(isAdmin: true),
               );
             } else {
@@ -125,6 +140,7 @@ class AppRouter {
           },
         );
 
+      case AppRoutes.tasks:
       case AppRoutes.chats:
       case AppRoutes.settings:
       case AppRoutes.algraphyPro:
@@ -153,16 +169,6 @@ class AppRouter {
           builder: (_) => BlocProvider(
             create: (context) => SignatureBloc(SignatureRepository()),
             child: SignatureViewPage(token: token),
-          ),
-        );
-
-      case AppRoutes.talentPortal:
-        final args = settings.arguments as Map<String, dynamic>?;
-        return MaterialPageRoute(
-          settings: settings,
-          builder: (_) => TalentWebViewPage(
-            url: args?['url'] ?? '',
-            title: args?['title'] ?? 'Talent Portal',
           ),
         );
 

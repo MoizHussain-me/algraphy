@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import '../views/attendance_timer_view.dart';
 import '../views/apply_leave_view.dart'; 
 import '../views/my_leaves_view.dart'; 
+import '../../../profile/presentation/profile_page.dart';
 
 class AttendancePage extends StatefulWidget {
   final UserModel currentUser;
@@ -47,6 +48,7 @@ class _AttendancePageState extends State<AttendancePage> with SingleTickerProvid
       "Leaves",   
       "Documents",  
       "Attendance", 
+      "Profile",
     ];
 
     if (_isManager) {
@@ -74,6 +76,7 @@ class _AttendancePageState extends State<AttendancePage> with SingleTickerProvid
       MyLeavesView(key: _leavesViewKey),
       DocumentManagementPage(isAdmin: false), 
       const AttendanceHistoryPage(),
+      ProfilePage(user: widget.currentUser, showScaffold: false),
     ];
 
     if (_isManager) {

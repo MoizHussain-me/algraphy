@@ -25,63 +25,33 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<LoginRequested>((event, emit) async {
       emit(AuthLoading());
       try {
-        // 1. Try Internal Login First
-        try {
-          final user = await _repo.login(event.email, event.password);
-          emit(AuthAuthenticated(user));
-          return;
-        } catch (e) {
-          logger.d("AUTH: Internal login failed, trying Talent: $e");
-        }
-
-        // 2. Try Talent Login Fallback
-        final data = await _repo.loginTalent(event.email, event.password);
-        final url = data['webview_url'];
-        if (url != null) {
-          emit(AuthTalentRedirect(url));
-        } else {
-          emit(AuthFailure("Invalid login credentials"));
-        }
+        final user = await _repo.login(event.email, event.password);
+        emit(AuthAuthenticated(user));
       } catch (e) {
-        emit(AuthFailure("Login failed: Invalid email or password"));
+        emit(AuthFailure(e.toString().replaceAll('Exception: ', '')));
       }
     });
 
-    on<TalentLoginRequested>((event, emit) async {
+    on<ClientSignupRequested>((event, emit) async {
       emit(AuthLoading());
       try {
-        final data = await _repo.loginTalent(event.email, event.password);
-        final url = data['webview_url'];
-        if (url != null) {
-          emit(AuthTalentRedirect(url));
-        } else {
-          emit(AuthFailure("Talent portal URL not found"));
-        }
-      } catch (e) {
-        emit(AuthFailure(e.toString()));
-      }
-    });
-
-    on<TalentSignupRequested>((event, emit) async {
-      emit(AuthLoading());
-      try {
-        final data = await _repo.signupTalent(
+        final user = await _repo.signupClient(
           name: event.name,
           email: event.email,
           password: event.password,
-          userType: event.userType,
-          talentType: event.talentType,
+          phone: event.phone,
+          companyName: event.companyName,
+          industry: event.industry,
+          servicesNeeded: event.servicesNeeded,
         );
-        final url = data['webview_url'];
-        if (url != null) {
-          emit(AuthTalentRedirect(url));
-        } else {
-          emit(AuthFailure("Talent portal URL not found"));
-        }
+        // Emitting ClientSignupSuccess instead of AuthAuthenticated
+        // so they stay on LoginPage but can be toggled back to 'login' mode
+        emit(ClientSignupSuccess());
       } catch (e) {
-        emit(AuthFailure(e.toString()));
+        emit(AuthFailure(e.toString().replaceAll('Exception: ', '')));
       }
     });
+
 
     // 3. Logout
     on<LogoutRequested>((event, emit) async {
