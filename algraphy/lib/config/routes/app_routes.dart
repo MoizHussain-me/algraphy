@@ -12,6 +12,7 @@ class AppRoutes {
   static const work = '/work';
   static const plans = '/plans';
   static const talents = '/talents';
+  static const talentPortal = '/talent-portal';
   static const contact = '/contact';
   static const settings = '/settings';
   static const comingSoon = '/coming-soon';

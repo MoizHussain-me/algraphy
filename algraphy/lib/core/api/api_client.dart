@@ -44,6 +44,30 @@ class ApiClient {
     }
 
     try {
+      print("DEBUG: POST $uri");
+      final response = await http.post(
+        uri,
+        headers: headers,
+        body: jsonEncode(body),
+      );
+      print("DEBUG: Status ${response.statusCode}");
+      print("DEBUG: Body ${response.body}");
+      return _handleResponse(response);
+    } catch (e) {
+      print("DEBUG: Error $e");
+      throw Exception("Network Error: $e");
+    }
+  }
+
+  // --- 2b. POST Request (Raw URL) ---
+  Future<Map<String, dynamic>> postRaw(String url, Map<String, dynamic> body) async {
+    final uri = Uri.parse(url);
+    final headers = {
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    };
+
+    try {
       final response = await http.post(
         uri,
         headers: headers,

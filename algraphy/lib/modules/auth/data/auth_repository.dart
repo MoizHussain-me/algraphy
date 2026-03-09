@@ -13,6 +13,7 @@ class AuthRepository {
   // --- LOGIN ---
   Future<UserModel> login(String email, String password) async {
     logger.i("AUTH: Attempting login for $email");
+
     final response = await _api.post('login', {
       'email': email,
       'password': password,
@@ -117,5 +118,52 @@ class AuthRepository {
   Future<void> deleteUser() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(AppConstants.userKey);
+  }
+
+  // --- TALENT ACTIONS ---
+  
+  static const String talentBaseUrl = "https://al-graphy.com/talents/api/auth.php";
+
+  Future<Map<String, dynamic>> loginTalent(String email, String password) async {
+    logger.i("AUTH: Attempting Talent login for $email");
+    
+    final response = await _api.postRaw(talentBaseUrl, {
+      'action': 'login',
+      'email': email,
+      'password': password,
+    });
+
+    if (response['status'] == 'success') {
+      logger.i("AUTH: Talent login successful.");
+      return response['data']; // Contains webview_url
+    } else {
+      throw Exception(response['message'] ?? 'Talent login failed');
+    }
+  }
+
+  Future<Map<String, dynamic>> signupTalent({
+    required String name,
+    required String email,
+    required String password,
+    required String userType,
+    required String talentType,
+  }) async {
+    logger.i("AUTH: Attempting Talent signup for $email");
+
+    final response = await _api.postRaw(talentBaseUrl, {
+      'action': 'signup',
+      'name': name,
+      'email': email,
+      'password': password,
+      'user_type': userType,
+      'talent_type': talentType,
+    });
+
+    if (response['status'] == 'success') {
+      logger.i("AUTH: Talent signup successful.");
+      return response['data']; // Contains webview_url
+    } else {
+      throw Exception(response['message'] ?? 'Talent signup failed');
+    }
   }
 }

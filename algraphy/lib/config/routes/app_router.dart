@@ -14,6 +14,7 @@ import '../../modules/auth/presentation/bloc/auth_bloc.dart';
 import '../../modules/employee/presentation/pages/attendance_page.dart';
 import '../../modules/common/widgets/main_scaffold.dart';
 import '../../modules/common/widgets/coming_soon_page.dart';
+import '../../modules/auth/presentation/pages/talent_webview_page.dart';
 import 'app_routes.dart';
 
 class AppRouter {
@@ -152,6 +153,16 @@ class AppRouter {
           builder: (_) => BlocProvider(
             create: (context) => SignatureBloc(SignatureRepository()),
             child: SignatureViewPage(token: token),
+          ),
+        );
+
+      case AppRoutes.talentPortal:
+        final args = settings.arguments as Map<String, dynamic>?;
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => TalentWebViewPage(
+            url: args?['url'] ?? '',
+            title: args?['title'] ?? 'Talent Portal',
           ),
         );
 

@@ -9,7 +9,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   AuthBloc(this._repo) : super(AuthInitial()) {
     
-    // 1. App Start: Check Storage
     on<AppStarted>((event, emit) async {
       try {
         final user = await _repo.getCurrentUser();
@@ -23,16 +22,62 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     });
 
-    // 2. Login: Call API (NOT Storage)
     on<LoginRequested>((event, emit) async {
-      emit(AuthLoading()); // 1. Show Loading Spinner
-      
+      emit(AuthLoading());
       try {
-        // FIX: Call login() to hit API, not getCurrentUser()
-        final user = await _repo.login(event.email, event.password);
-        
-        // login() returns a non-null User on success, so no '!' needed
-        emit(AuthAuthenticated(user)); 
+        // 1. Try Internal Login First
+        try {
+          final user = await _repo.login(event.email, event.password);
+          emit(AuthAuthenticated(user));
+          return;
+        } catch (e) {
+          logger.d("AUTH: Internal login failed, trying Talent: $e");
+        }
+
+        // 2. Try Talent Login Fallback
+        final data = await _repo.loginTalent(event.email, event.password);
+        final url = data['webview_url'];
+        if (url != null) {
+          emit(AuthTalentRedirect(url));
+        } else {
+          emit(AuthFailure("Invalid login credentials"));
+        }
+      } catch (e) {
+        emit(AuthFailure("Login failed: Invalid email or password"));
+      }
+    });
+
+    on<TalentLoginRequested>((event, emit) async {
+      emit(AuthLoading());
+      try {
+        final data = await _repo.loginTalent(event.email, event.password);
+        final url = data['webview_url'];
+        if (url != null) {
+          emit(AuthTalentRedirect(url));
+        } else {
+          emit(AuthFailure("Talent portal URL not found"));
+        }
+      } catch (e) {
+        emit(AuthFailure(e.toString()));
+      }
+    });
+
+    on<TalentSignupRequested>((event, emit) async {
+      emit(AuthLoading());
+      try {
+        final data = await _repo.signupTalent(
+          name: event.name,
+          email: event.email,
+          password: event.password,
+          userType: event.userType,
+          talentType: event.talentType,
+        );
+        final url = data['webview_url'];
+        if (url != null) {
+          emit(AuthTalentRedirect(url));
+        } else {
+          emit(AuthFailure("Talent portal URL not found"));
+        }
       } catch (e) {
         emit(AuthFailure(e.toString()));
       }
@@ -45,20 +90,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthUnauthenticated());
     });
 
-    // 4. Change Password
     on<ChangePasswordRequested>((event, emit) async {
       try {
         await _repo.changePassword(event.newPassword);
-        
         if (state is AuthAuthenticated) {
           final currentUser = (state as AuthAuthenticated).user;
-          // Update the local user model so UI updates immediately
           final updatedUser = currentUser.copyWith(mustChangePassword: false);
           emit(AuthAuthenticated(updatedUser));
         }
       } catch (e) {
-        // Ideally emit a failure state or show a snackbar via a listener, 
-        // but for now we catch it to prevent crashing.
         logger.e("Change Password Error: $e");
         emit(AuthFailure(e.toString()));
       }

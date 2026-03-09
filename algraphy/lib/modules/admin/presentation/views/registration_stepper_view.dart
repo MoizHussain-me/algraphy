@@ -23,7 +23,7 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
   final int _totalSteps = 5;
   final _formKey = GlobalKey<FormState>();
 
-  final List<String> _stepTitles = ["Basic Info", "Personal Details", "Contact Info", "Work Info", "Hierarchy Info"];
+  final List<String> _stepTitles = ["Basic Info", "Financials", "Contact (Optional)", "Work Info", "Personal (Optional)"];
 
   List<String> _departments = []; 
   List<UserModel> _employeeList = []; 
@@ -325,31 +325,45 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
           const SizedBox(height: 16),
           _buildTwoColumnRow(_customTextField("Nick Name", _nickNameCtrl), _customTextField("Employee ID", _empIdCtrl, isRequired: true, icon: Icons.badge_outlined)),
           const SizedBox(height: 16),
-          // FIX: Added setState to dropdown onChanged
           _buildTwoColumnRow(
              _customTextField("Work Email", _emailCtrl, isRequired: true, icon: Icons.email, validator: _validateEmail),
              _customDropdown("System Access", ["employee", "admin"], (val) => setState(() => _systemRole = val ?? "employee"), isRequired: true)
           ),
-          const SizedBox(height: 16), const Divider(color: Colors.white24), _sectionHeader("Financials"), const SizedBox(height: 16),
-          _buildTwoColumnRow(_customTextField("Salary", _salaryCtrl, icon: Icons.attach_money, isNumber: true, isSalary: true), _customTextField("Hourly Rate", _hourlyRateCtrl, isNumber: true)), 
-          const SizedBox(height: 16),
-          _buildTwoColumnRow(_customTextField("Pending Commission", _lastMonthCommCtrl, isNumber: true), _customTextField("IBAN", _ibanCtrl, icon: Icons.account_balance)),
-          const SizedBox(height: 16),
+          const SizedBox(height: 16), 
           _customTextField("Job Description", _jobDescCtrl, maxLines: 2),
           const SizedBox(height: 16),
           _customTextField("Sub Job Description", _subJobDescCtrl, maxLines: 2),
         ]);
         
-      
+      case 1: // FINANCIALS
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          _sectionHeader("Financial Information"), const SizedBox(height: 16),
+          _buildTwoColumnRow(_customTextField("Salary", _salaryCtrl, icon: Icons.attach_money, isNumber: true, isSalary: true), _customTextField("Hourly Rate", _hourlyRateCtrl, isNumber: true)), 
+          const SizedBox(height: 16),
+          _buildTwoColumnRow(_customTextField("Pending Commission", _lastMonthCommCtrl, isNumber: true), _customTextField("IBAN", _ibanCtrl, icon: Icons.account_balance)),
+        ]);
+
+      case 2: // CONTACT (OPTIONAL)
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          _sectionHeader("Contact Details (Optional)"), const SizedBox(height: 20), 
+          _buildTwoColumnRow(_customTextField("Work Phone", _workPhoneCtrl, icon: Icons.phone), _customTextField("Personal Mobile", _personalMobileCtrl, icon: Icons.phone_android)), 
+          const SizedBox(height: 16), 
+          _customTextField("Personal Email", _personalEmailCtrl, icon: Icons.email_outlined, validator: _validateEmail), 
+          const SizedBox(height: 16), 
+          _customTextField("Seating Location", _seatingLocationCtrl, icon: Icons.chair), 
+          const SizedBox(height: 16), 
+          _customTextField("Present Address", _presentAddressCtrl, icon: Icons.home, maxLines: 3), 
+          const SizedBox(height: 16), 
+          _customTextField("Permanent Address", _permanentAddressCtrl, icon: Icons.location_city, maxLines: 3)
+        ]);
+
       case 3: // WORK
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _sectionHeader("Work Information"), const SizedBox(height: 20),
-          // FIX: Added setState to dropdowns
           _buildTwoColumnRow(_customDropdown("Department", _departments, (val) => setState(() => _selectedDepartment = val), isRequired: true), _customTextField("Location", _locationCtrl, icon: Icons.place)),
           const SizedBox(height: 16),
           _buildTwoColumnRow(_customTextField("Designation", _designationCtrl, icon: Icons.badge), _customTextField("Date of Joining", _dojCtrl, icon: Icons.calendar_today, isDate: true)),
           const SizedBox(height: 16),
-          // FIX: Added setState to dropdowns
           _buildTwoColumnRow(_customDropdown("Emp Type", ["Permanent", "Contract", "Intern"], (val) => setState(() => _employmentType = val)), _customDropdown("Emp Status", ["Active", "Probation", "Terminated"], (val) => setState(() => _employeeStatus = val))),
           const SizedBox(height: 16),
           _buildTwoColumnRow(_customTextField("Current Exp.", _currExpCtrl), _customTextField("Total Exp.", _totalExpCtrl)),
@@ -357,16 +371,32 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
           _customTextField("Source of Hire", _sourceOfHireCtrl),
         ]);
 
-      default: return _buildDefaultStep(step);
-    }
-  }
+      case 4: // PERSONAL (OPTIONAL)
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          _sectionHeader("Personal Details (Optional)"), const SizedBox(height: 20), 
+          _buildTwoColumnRow(_customTextField("Date of Birth", _dobCtrl, icon: Icons.cake, isDate: true), _customTextField("Age", _ageCtrl, readOnly: true)), 
+          const SizedBox(height: 16), 
+          _customDropdown("Marital Status", ["Single", "Married", "Divorced"], (val) => setState(() => _maritalStatus = val)), 
+          const SizedBox(height: 16), 
+          const Text("Gender", style: TextStyle(color: Colors.grey, fontSize: 12)), 
+          Row(children: [_buildGenderRadio("Male"), const SizedBox(width: 20), _buildGenderRadio("Female"), const SizedBox(width: 20), _buildGenderRadio("Prefer not to say")]), 
+          const SizedBox(height: 16), 
+          _customTextField("About Me", _aboutMeCtrl, maxLines: 3), 
+          const SizedBox(height: 16), 
+          _customTextField("Expertise", _expertiseCtrl),
+          const SizedBox(height: 32),
+          const Divider(color: Colors.white24),
+          const SizedBox(height: 16),
+          _sectionHeader("Hierarchy Information"), 
+          const SizedBox(height: 20), 
+          _buildTwoColumnRow(
+            _employeeDropdown("Reporting Manager", _selectedReportingManagerId, (val) => setState(() => _selectedReportingManagerId = val)), 
+            _employeeDropdown("Secondary Manager", _selectedSecondaryManagerId, (val) => setState(() => _selectedSecondaryManagerId = val))
+          )
+        ]);
 
-  Widget _buildDefaultStep(int step) {
-      if (step == 1) return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_sectionHeader("Personal Details"), const SizedBox(height: 20), _buildTwoColumnRow(_customTextField("Date of Birth", _dobCtrl, icon: Icons.cake, isDate: true), _customTextField("Age", _ageCtrl, readOnly: true)), const SizedBox(height: 16), _customDropdown("Marital Status", ["Single", "Married", "Divorced"], (val) => setState(() => _maritalStatus = val)), const SizedBox(height: 16), const Text("Gender", style: TextStyle(color: Colors.grey, fontSize: 12)), Row(children: [_buildGenderRadio("Male"), const SizedBox(width: 20), _buildGenderRadio("Female")]), const SizedBox(height: 16), _customTextField("About Me (Optional)", _aboutMeCtrl, maxLines: 3), const SizedBox(height: 16), _customTextField("Expertise", _expertiseCtrl)]);
-      if (step == 2) return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_sectionHeader("Contact Details"), const SizedBox(height: 20), _buildTwoColumnRow(_customTextField("Work Phone", _workPhoneCtrl, icon: Icons.phone), _customTextField("Personal Mobile", _personalMobileCtrl, icon: Icons.phone_android)), const SizedBox(height: 16), _customTextField("Personal Email", _personalEmailCtrl, icon: Icons.email_outlined, validator: _validateEmail), const SizedBox(height: 16), _customTextField("Seating Location", _seatingLocationCtrl, icon: Icons.chair), const SizedBox(height: 16), _customTextField("Present Address", _presentAddressCtrl, icon: Icons.home, maxLines: 3), const SizedBox(height: 16), _customTextField("Permanent Address", _permanentAddressCtrl, icon: Icons.location_city, maxLines: 3)]);
-      // FIX: Added setState to hierarchy dropdowns
-      if (step == 4) return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_sectionHeader("Hierarchy Information"), const SizedBox(height: 20), _buildTwoColumnRow(_employeeDropdown("Reporting Manager", _selectedReportingManagerId, (val) => setState(() => _selectedReportingManagerId = val)), _employeeDropdown("Secondary Manager", _selectedSecondaryManagerId, (val) => setState(() => _selectedSecondaryManagerId = val)))]);
-      return const SizedBox.shrink();
+      default: return const SizedBox.shrink();
+    }
   }
 
   // ... (UI Helpers same as before) ...
