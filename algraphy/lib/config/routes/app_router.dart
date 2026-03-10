@@ -6,6 +6,7 @@ import 'package:algraphy/modules/profile/presentation/profile_page.dart';
 import 'package:algraphy/modules/signature/data/repository/signature_repository.dart';
 import 'package:algraphy/modules/signature/presentation/bloc/signature_bloc.dart';
 import 'package:algraphy/modules/signature/presentation/pages/signature_view_page.dart';
+import 'package:algraphy/modules/tasks/presentation/pages/tasks_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/foundation.dart' show kIsWeb; // Key for Platform check
@@ -141,6 +142,16 @@ class AppRouter {
         );
 
       case AppRoutes.tasks:
+        return _buildProtectedPage(
+          settings: settings,
+          builder: (user) => MainScaffold(
+            title: 'Tasks',
+            currentRoute: AppRoutes.tasks,
+            currentUser: user,
+            body: const TasksPage(),
+          ),
+        );
+
       case AppRoutes.chats:
       case AppRoutes.settings:
       case AppRoutes.algraphyPro:

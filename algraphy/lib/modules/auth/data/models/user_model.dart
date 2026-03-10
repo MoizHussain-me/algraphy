@@ -157,31 +157,76 @@ class UserModel {
       'role': role,
       'must_change_password': mustChangePassword,
       'direct_reports_count': directReportsCount,
-      
+
       // EMPLOYEES TABLE
-      'employee_id': employeeId,
+      // Backend PHP reads 'employeeId' for employee_code column
+      'employeeId': employeeId,     // camelCase key for PHP backend
+      'employee_id': employeeId,    // snake_case fallback
       'employee_code': employeeCode,
       'first_name': firstName,
       'last_name': lastName,
       'nick_name': nickName,
       'profile_picture': profilePicture,
 
-      // OTHER FIELDS
+      // FINANCIALS
       'salary': salary,
       'hourly_rate': employeeHourlyRate,
+      'employeeHourlyRate': employeeHourlyRate,
       'last_month_commission': lastMonthCommission,
+      'lastMonthCommission': lastMonthCommission,
       'iban': iban,
+
+      // WORK INFO
       'department': department,
       'location': location,
       'designation': designation,
       'date_of_joining': dateOfJoining,
+      'dateOfJoining': dateOfJoining,
       'employment_type': employmentType,
+      'employmentType': employmentType,
       'employee_status': employeeStatus,
+      'employeeStatus': employeeStatus,
+      'source_of_hire': sourceOfHire,
+      'sourceOfHire': sourceOfHire,
+      'current_experience': currentExperience,
+      'currentExperience': currentExperience,
+      'total_experience': totalExperience,
+      'totalExperience': totalExperience,
+      'job_description': jobDescription,
+      'jobDescription': jobDescription,
+      'sub_job_description': subJobDescription,
+      'subJobDescription': subJobDescription,
+
+      // PERSONAL DETAILS
       'date_of_birth': dateOfBirth,
+      'dateOfBirth': dateOfBirth,
       'gender': gender,
       'marital_status': maritalStatus,
+      'maritalStatus': maritalStatus,
+      'about_me': aboutMe,
+      'aboutMe': aboutMe,
+      'expertise': expertise,
+
+      // CONTACT DETAILS
+      'work_phone': workPhoneNumber,
+      'workPhoneNumber': workPhoneNumber,
+      'extension': extension,
+      'personal_mobile': personalMobileNumber,
+      'personalMobileNumber': personalMobileNumber,
+      'personal_email': personalEmailAddress,
+      'personalEmailAddress': personalEmailAddress,
+      'seating_location': seatingLocation,
+      'seatingLocation': seatingLocation,
+      'present_address': presentAddress,
+      'presentAddress': presentAddress,
+      'permanent_address': permanentAddress,
+      'permanentAddress': permanentAddress,
+
+      // HIERARCHY
       'reporting_manager_id': reportingManager,
+      'reportingManager': reportingManager,
       'secondary_reporting_manager_id': secondaryReportingManager,
+      'secondaryReportingManager': secondaryReportingManager,
     };
   }
 

@@ -21,7 +21,12 @@ class SideMenu extends StatelessWidget {
 
   Widget _buildHeader(BuildContext context) {
     final String fullName = "${currentUser.firstName ?? ''} ${currentUser.lastName ?? ''}".trim();
-    final String role = currentUser.role.toUpperCase();
+    String role = currentUser.role;
+    if (role.toLowerCase() == 'admin') role = 'Administrator';
+    else if (role.toLowerCase() == 'manager') role = 'Manager';
+    else if (role.toLowerCase() == 'client') role = 'System Client';
+    else role = role[0].toUpperCase() + role.substring(1).toLowerCase();
+    
     final String email = currentUser.email;
 
     return Container(

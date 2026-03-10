@@ -4,8 +4,7 @@ import 'package:algraphy/modules/employee/presentation/pages/attendance_history.
 import 'package:algraphy/modules/employee/presentation/views/approval_view.dart';
 import 'package:algraphy/modules/employee/presentation/views/dashboard_view.dart';
 import 'package:algraphy/modules/signature/presentation/pages/document_management_page.dart';
-import 'package:algraphy/modules/tasks/presentation/views/create_task_view.dart';
-import 'package:algraphy/modules/tasks/presentation/views/tasks_view.dart';
+
 import 'package:flutter/material.dart';
 import '../views/attendance_timer_view.dart';
 import '../views/apply_leave_view.dart'; 
@@ -26,7 +25,6 @@ class _AttendancePageState extends State<AttendancePage> with SingleTickerProvid
   bool get _isManager => widget.currentUser.role == 'admin' || widget.currentUser.isManager;
 
   Key _leavesViewKey = UniqueKey();
-  Key _tasksViewKey = UniqueKey();
 
   late List<String> _tabs;
 
@@ -44,10 +42,9 @@ class _AttendancePageState extends State<AttendancePage> with SingleTickerProvid
     _tabs = [
       "Activities",
       "Dashboard",
-      "Tasks",
-      "Leaves",   
-      "Documents",  
-      "Attendance", 
+      "Leaves",
+      "Documents",
+      "Attendance",
       "Profile",
     ];
 
@@ -72,9 +69,8 @@ class _AttendancePageState extends State<AttendancePage> with SingleTickerProvid
     List<Widget> views = [
       AttendanceTimerView(userName: widget.currentUser),
       DashboardView(currentUser: widget.currentUser),
-      TasksView(key: _tasksViewKey),
       MyLeavesView(key: _leavesViewKey),
-      DocumentManagementPage(isAdmin: false), 
+      DocumentManagementPage(isAdmin: false),
       const AttendanceHistoryPage(),
       ProfilePage(user: widget.currentUser, showScaffold: false),
     ];
@@ -121,27 +117,8 @@ class _AttendancePageState extends State<AttendancePage> with SingleTickerProvid
   }
 
   Widget? _buildFAB(Color primaryRed) {
-    // Index 2 is Tasks, Index 3 is Leaves
+    // Index 2 is Leaves
     if (_tabController.index == 2) {
-      return FloatingActionButton.extended(
-        onPressed: () async {
-          final result = await showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (context) => const CreateTaskView(),
-          );
-          if (result == true) {
-            setState(() {
-              _tasksViewKey = UniqueKey();
-            });
-          }
-        },
-        backgroundColor: primaryRed,
-        icon: const Icon(Icons.add_task, color: Colors.white),
-        label: const Text("Create Task", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-      );
-    } else if (_tabController.index == 3) {
       return FloatingActionButton.extended(
         onPressed: () async {
           final result = await Navigator.push(
@@ -151,7 +128,7 @@ class _AttendancePageState extends State<AttendancePage> with SingleTickerProvid
           if (result == true) {
             setState(() {
               _leavesViewKey = UniqueKey();
-              _tabController.animateTo(3); 
+              _tabController.animateTo(2); 
             });
           }
         },
