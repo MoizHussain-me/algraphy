@@ -17,6 +17,7 @@ import 'modules/auth/presentation/bloc/auth_event.dart';
 import 'modules/employee/presentation/pages/attendance_page.dart'; 
 import 'modules/auth/presentation/pages/change_password_page.dart'; 
 import 'modules/common/widgets/main_scaffold.dart';
+import 'modules/client/presentation/pages/client_dashboard_page.dart'; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

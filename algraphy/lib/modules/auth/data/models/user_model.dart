@@ -52,6 +52,11 @@ class UserModel {
   final String? jobDescription;
   final String? subJobDescription;
 
+  // -- CLIENT SPECIFIC --
+  final String? companyName;
+  final String? industry;
+  final String? servicesNeeded;
+
   // -- HIERARCHY --
   final String? reportingManager; // ID
   final String? reportingManagerName; // Name
@@ -70,6 +75,7 @@ class UserModel {
     this.employmentType, this.employeeStatus, this.sourceOfHire,
     this.currentExperience, this.totalExperience, this.jobDescription, this.subJobDescription,
     this.reportingManager, this.reportingManagerName, this.secondaryReportingManager,
+    this.companyName, this.industry, this.servicesNeeded,
   });
 
   bool get isManager => role == 'admin' || role == 'manager' || directReportsCount > 0;
@@ -86,6 +92,18 @@ class UserModel {
   }
 
   String get fullName => "$firstName $lastName";
+
+  factory UserModel.empty() {
+    return UserModel(
+      id: '',
+      email: '',
+      password: '',
+      role: 'employee',
+      mustChangePassword: true,
+      firstName: '',
+      lastName: '',
+    );
+  }
 
   factory UserModel.fromMap(Map<String, dynamic> m) {
     final rawChangePass = m['mustChangePassword'] ?? m['must_change_password'];
@@ -145,6 +163,9 @@ class UserModel {
       reportingManager: m['reporting_manager_id']?.toString(),
       reportingManagerName: m['reporting_manager_name'],
       secondaryReportingManager: m['secondary_reporting_manager_id']?.toString(),
+      companyName: m['company_name'] ?? m['companyName'],
+      industry: m['industry'],
+      servicesNeeded: m['services_needed'] ?? m['servicesNeeded'],
     );
   }
 
@@ -227,6 +248,13 @@ class UserModel {
       'reportingManager': reportingManager,
       'secondary_reporting_manager_id': secondaryReportingManager,
       'secondaryReportingManager': secondaryReportingManager,
+
+      // CLIENT SPECIFIC
+      'company_name': companyName,
+      'companyName': companyName,
+      'industry': industry,
+      'services_needed': servicesNeeded,
+      'servicesNeeded': servicesNeeded,
     };
   }
 
@@ -243,6 +271,39 @@ class UserModel {
     String? employeeId,
     String? employeeCode,
     String? profilePicture,
+    double? salary,
+    double? lastMonthCommission,
+    double? employeeHourlyRate,
+    String? iban,
+    String? dateOfBirth,
+    String? gender,
+    String? maritalStatus,
+    String? aboutMe,
+    String? expertise,
+    String? workPhoneNumber,
+    String? extension,
+    String? personalMobileNumber,
+    String? personalEmailAddress,
+    String? seatingLocation,
+    String? presentAddress,
+    String? permanentAddress,
+    String? department,
+    String? location,
+    String? designation,
+    String? dateOfJoining,
+    String? employmentType,
+    String? employeeStatus,
+    String? sourceOfHire,
+    String? currentExperience,
+    String? totalExperience,
+    String? jobDescription,
+    String? subJobDescription,
+    String? reportingManager,
+    String? reportingManagerName,
+    String? secondaryReportingManager,
+    String? companyName,
+    String? industry,
+    String? servicesNeeded,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -257,10 +318,39 @@ class UserModel {
       employeeId: employeeId ?? this.employeeId,
       employeeCode: employeeCode ?? this.employeeCode,
       profilePicture: profilePicture ?? this.profilePicture,
-      salary: salary,
-      iban: iban,
-      department: department,
-      designation: designation,
+      salary: salary ?? this.salary,
+      lastMonthCommission: lastMonthCommission ?? this.lastMonthCommission,
+      employeeHourlyRate: employeeHourlyRate ?? this.employeeHourlyRate,
+      iban: iban ?? this.iban,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      gender: gender ?? this.gender,
+      maritalStatus: maritalStatus ?? this.maritalStatus,
+      aboutMe: aboutMe ?? this.aboutMe,
+      expertise: expertise ?? this.expertise,
+      workPhoneNumber: workPhoneNumber ?? this.workPhoneNumber,
+      extension: extension ?? this.extension,
+      personalMobileNumber: personalMobileNumber ?? this.personalMobileNumber,
+      personalEmailAddress: personalEmailAddress ?? this.personalEmailAddress,
+      seatingLocation: seatingLocation ?? this.seatingLocation,
+      presentAddress: presentAddress ?? this.presentAddress,
+      permanentAddress: permanentAddress ?? this.permanentAddress,
+      department: department ?? this.department,
+      location: location ?? this.location,
+      designation: designation ?? this.designation,
+      dateOfJoining: dateOfJoining ?? this.dateOfJoining,
+      employmentType: employmentType ?? this.employmentType,
+      employeeStatus: employeeStatus ?? this.employeeStatus,
+      sourceOfHire: sourceOfHire ?? this.sourceOfHire,
+      currentExperience: currentExperience ?? this.currentExperience,
+      totalExperience: totalExperience ?? this.totalExperience,
+      jobDescription: jobDescription ?? this.jobDescription,
+      subJobDescription: subJobDescription ?? this.subJobDescription,
+      reportingManager: reportingManager ?? this.reportingManager,
+      reportingManagerName: reportingManagerName ?? this.reportingManagerName,
+      secondaryReportingManager: secondaryReportingManager ?? this.secondaryReportingManager,
+      companyName: companyName ?? this.companyName,
+      industry: industry ?? this.industry,
+      servicesNeeded: servicesNeeded ?? this.servicesNeeded,
     );
   }
 }

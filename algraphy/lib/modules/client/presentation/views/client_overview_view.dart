@@ -1,85 +1,19 @@
 import 'package:algraphy/modules/auth/data/models/user_model.dart';
-import 'package:algraphy/modules/common/widgets/coming_soon_page.dart';
-import 'package:algraphy/modules/profile/presentation/profile_page.dart';
 import 'package:flutter/material.dart';
 
-class ClientDashboardPage extends StatefulWidget {
+class ClientOverviewView extends StatelessWidget {
   final UserModel currentUser;
-  const ClientDashboardPage({super.key, required this.currentUser});
-
-  @override
-  State<ClientDashboardPage> createState() => _ClientDashboardPageState();
-}
-
-class _ClientDashboardPageState extends State<ClientDashboardPage> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  final List<String> _tabs = ["Overview", "Work", "Chats", "Documents", "Profile"];
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: _tabs.length, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
+  const ClientOverviewView({super.key, required this.currentUser});
 
   @override
   Widget build(BuildContext context) {
-    const Color backgroundDark = Color(0xFF080808);
-    const Color primaryRed = Color(0xFFDC2726);
-
-    return Scaffold(
-      backgroundColor: backgroundDark,
-      body: Column(
-        children: [
-          Container(
-            color: backgroundDark,
-            width: double.infinity,
-            child: TabBar(
-              controller: _tabController,
-              isScrollable: true,
-              indicatorColor: primaryRed,
-              indicatorWeight: 3,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.grey,
-              labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal, fontSize: 15),
-              dividerColor: Colors.transparent,
-              tabAlignment: TabAlignment.start,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              labelPadding: const EdgeInsets.only(right: 24),
-              tabs: _tabs.map((tab) => Tab(text: tab)).toList(),
-            ),
-          ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildOverview(),
-                const ComingSoonPage(title: "Project Work"),
-                const ComingSoonPage(title: "Client Chats"),
-                const ComingSoonPage(title: "Shared Documents"),
-                ProfilePage(user: widget.currentUser, showScaffold: false),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOverview() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Welcome, ${widget.currentUser.firstName}!",
+            "Welcome, ${currentUser.firstName}!",
             style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           const SizedBox(height: 8),

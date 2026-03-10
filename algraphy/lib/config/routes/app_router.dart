@@ -103,17 +103,18 @@ class AppRouter {
         return _buildProtectedPage(
           settings: settings,
           builder: (user) {
-            // RESTRICTION: Only Admin/Manager AND Web
-            if (kIsWeb && (user.role == 'admin' || user.role == 'manager')) {
+            // Allow Admin/Manager on BOTH Mobile and Web
+            if (user.role == 'admin' || user.role == 'manager') {
               return MainScaffold(
                 title: 'Employees',
                 currentRoute: AppRoutes.employees,
                 currentUser: user,
-                // Pass true for isAdmin so they see the Onboarding tab
-                body: EmployeeManagementPage(isAdmin: true),
+                // Both can perform management tasks; 
+                // Stepper will still show 'Portal Only' on mobile.
+                body: EmployeeManagementPage(isAdmin: true, currentUser: user),
               );
             } else {
-              // Access Denied Fallback
+              // Access Denied Fallback for normal employees/clients
               return MainScaffold(
                 title: 'Employees',
                 currentRoute: AppRoutes.employees,
@@ -130,7 +131,7 @@ class AppRouter {
                       ),
                       SizedBox(height: 8),
                       Text(
-                        "This section is only available to Administrators on Web.",
+                        "This section is only available to Administrators.",
                         style: TextStyle(color: Colors.grey),
                       ),
                     ],
@@ -161,6 +162,7 @@ class AppRouter {
       case AppRoutes.plans:
       case AppRoutes.talents:
       case AppRoutes.contact:
+      case AppRoutes.privacyPolicy:
         return _buildProtectedPage(
           settings: settings,
           builder: (user) => MainScaffold(

@@ -7,9 +7,11 @@ import 'package:get_it/get_it.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io';
 import '../views/registration_stepper_view.dart'; // Uncommented!
+import '../views/team_attendance_view.dart';
 
 class AllEmployeesPage extends StatefulWidget {
-  const AllEmployeesPage({super.key});
+  final UserModel currentUser;
+  const AllEmployeesPage({super.key, required this.currentUser});
 
   @override
   State<AllEmployeesPage> createState() => _AllEmployeesPageState();
@@ -104,25 +106,26 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Edit Button (Now Connected)
-                IconButton(
-                  icon: const Icon(Icons.edit, color: Color(0xFFDC2726)),
-                  tooltip: "Edit Employee",
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => Scaffold(
-                          appBar: AppBar(
-                            title: const Text("Edit Employee"),
+                if (kIsWeb)
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Color(0xFFDC2726)),
+                    tooltip: "Edit Employee",
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => Scaffold(
+                            appBar: AppBar(
+                              title: const Text("Edit Employee"),
+                              backgroundColor: const Color(0xFF080808),
+                            ),
                             backgroundColor: const Color(0xFF080808),
+                            body: RegistrationStepperView(userToEdit: user),
                           ),
-                          backgroundColor: const Color(0xFF080808),
-                          body: RegistrationStepperView(userToEdit: user),
                         ),
-                      ),
-                    ).then((_) => _fetchEmployees()); // Refresh on return
-                  },
-                ),
+                      ).then((_) => _fetchEmployees()); // Refresh on return
+                    },
+                  ),
                 const Icon(Icons.chevron_right, color: Colors.grey),
               ],
             ),
@@ -130,7 +133,13 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
               // Open Profile View
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => ProfilePage(user: user,showScaffold: true,)),
+                MaterialPageRoute(
+                  builder: (_) => ProfilePage(
+                    user: user,
+                    loggedInUser: widget.currentUser,
+                    showScaffold: true,
+                  ),
+                ),
               );
             },
           ),

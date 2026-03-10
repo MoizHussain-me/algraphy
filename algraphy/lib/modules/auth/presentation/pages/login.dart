@@ -190,8 +190,7 @@ class _LoginPageState extends State<LoginPage> {
               controller: _phoneController,
               style: const TextStyle(color: Colors.white),
               keyboardType: TextInputType.phone,
-              decoration: _inputDecoration('Phone Number', Icons.phone_outlined),
-              validator: (value) => value!.isEmpty ? 'Enter phone number' : null,
+              decoration: _inputDecoration('Phone Number (Optional)', Icons.phone_outlined),
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -360,33 +359,53 @@ class _LoginPageState extends State<LoginPage> {
       children: [
         Divider(color: Colors.white.withOpacity(0.05)),
         const SizedBox(height: 16),
-        Opacity(
-          opacity: 0.6,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text('Secured by Algraphy', style: TextStyle(color: Colors.grey, fontSize: 12)),
-              const SizedBox(width: 8),
-              Container(width: 4, height: 4, decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.grey)),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () async {
-                  final url = Uri.parse(AppConstants.privacyPolicyUrl);
-                  if (await canLaunchUrl(url)) {
-                    await launchUrl(url, mode: LaunchMode.externalApplication);
+        Column(
+          children: [
+            const Text(
+              'By continuing, you acknowledge you have read and agree to our',
+              style: TextStyle(color: Colors.grey, fontSize: 11),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            GestureDetector(
+              onTap: () async {
+                final url = Uri.parse(AppConstants.privacyPolicyUrl);
+                try {
+                  // Attempting to launch directly for better compatibility
+                  bool launched = await launchUrl(
+                    url, 
+                    mode: LaunchMode.externalApplication,
+                  );
+                  if (!launched) {
+                    debugPrint("Standard launch failed, trying universal link...");
+                    await launchUrl(url, mode: LaunchMode.platformDefault);
                   }
-                },
-                child: const Text(
-                  'Privacy Policy',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    decoration: TextDecoration.underline,
-                  ),
+                } catch (e) {
+                  debugPrint("URL Launch Error: $e");
+                  // Fallback for extreme cases
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Could not open Privacy Policy: $url')),
+                    );
+                  }
+                }
+              },
+              child: const Text(
+                'Privacy Policy',
+                style: TextStyle(
+                  color: Color(0xFFDC2726),
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  decoration: TextDecoration.underline,
                 ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 16),
+            Opacity(
+              opacity: 0.5,
+              child: const Text('Secured by Algraphy', style: TextStyle(color: Colors.grey, fontSize: 10)),
+            ),
+          ],
         ),
       ],
     );

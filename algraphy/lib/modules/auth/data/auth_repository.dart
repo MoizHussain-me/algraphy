@@ -160,7 +160,21 @@ class AuthRepository {
 
   Future<void> deleteUser() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(AppConstants.userKey);
+    final token = prefs.getString(AppConstants.tokenKey);
+    
+    if (token == null) throw Exception("Not authenticated");
+
+    final response = await _api.post(
+      'delete_account', 
+      {'token': token}, 
+      token: token 
+    );
+
+    if (response['status'] != 'success') {
+      throw Exception(response['message'] ?? 'Failed to delete account');
+    }
+
+    await logout();
   }
 
 

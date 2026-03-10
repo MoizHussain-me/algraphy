@@ -19,6 +19,7 @@ class AppRoutes {
   static const attendance = '/attendance';
   static const signature = '/signature';
   static const tasks = '/tasks';
+  static const privacyPolicy = '/privacy-policy';
 
 
 }

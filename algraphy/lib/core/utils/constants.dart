@@ -6,7 +6,6 @@ class AppConstants {
   //static const String apiBaseUrl = "http://localhost/algraphy_api/routes/api.php";
   static const String apiBaseUrl = "http://192.168.100.149/algraphy_api/routes/api.php";
   //static const String apiBaseUrl = "https://al-graphy.site/algraphy_api/routes/api.php";
- 
   static const String privacyPolicyUrl = "https://al-graphy.site/algraphy_api/privacy-policy";
 
   // 2. Storage Keys

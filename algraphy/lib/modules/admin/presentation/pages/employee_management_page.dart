@@ -1,17 +1,21 @@
 import 'package:algraphy/modules/signature/presentation/pages/document_management_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb; 
+import 'package:algraphy/modules/auth/data/models/user_model.dart';
 import '../views/registration_stepper_view.dart';
+import '../views/team_attendance_view.dart';
 import '../../../../modules/common/widgets/coming_soon_page.dart';
 import 'all_employees_page.dart'; 
 
 class EmployeeManagementPage extends StatefulWidget {
   final bool isAdmin;
   final int initialIndex;
+  final UserModel currentUser;
 
   const EmployeeManagementPage({
     super.key,
     required this.isAdmin,
+    required this.currentUser,
     this.initialIndex = 0,
   });
 
@@ -40,10 +44,9 @@ class _EmployeeManagementPageState extends State<EmployeeManagementPage> with Si
 
   void _setupTabs() {
     if (widget.isAdmin) {
-      _tabs = ["Directory", "Onboarding", "Org Tree", "Documents"];
+      _tabs = ["Directory", "Attendance", "Onboarding", "Org Tree", "Documents"];
     } else {
-      // FIX: Added Documents to the labels list to match the views list length
-      _tabs = ["Directory", "Org Tree", "Documents"];
+      _tabs = ["Directory", "Attendance", "Org Tree", "Documents"];
     }
   }
 
@@ -92,7 +95,8 @@ class _EmployeeManagementPageState extends State<EmployeeManagementPage> with Si
 
   List<Widget> _buildTabViews() {
     List<Widget> views = [
-      const AllEmployeesPage(), 
+      AllEmployeesPage(currentUser: widget.currentUser), 
+      TeamAttendanceView(loggedInUser: widget.currentUser),
     ];
 
     if (widget.isAdmin) {
@@ -105,7 +109,7 @@ class _EmployeeManagementPageState extends State<EmployeeManagementPage> with Si
       views.add(const ComingSoonPage(title: "Organization Tree"));
       views.add(const DocumentManagementPage(isAdmin: true));
     } else {
-      // Non-Admin Views (Now matches the 3 tabs defined in _setupTabs)
+      // Non-Admin Views
       views.add(const ComingSoonPage(title: "Organization Tree"));
       views.add(const DocumentManagementPage(isAdmin: false));
     }

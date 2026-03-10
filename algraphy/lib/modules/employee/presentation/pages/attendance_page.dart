@@ -10,6 +10,7 @@ import '../views/attendance_timer_view.dart';
 import '../views/apply_leave_view.dart'; 
 import '../views/my_leaves_view.dart'; 
 import '../../../profile/presentation/profile_page.dart';
+import '../../../client/presentation/views/client_overview_view.dart';
 
 class AttendancePage extends StatefulWidget {
   final UserModel currentUser;
@@ -23,6 +24,7 @@ class _AttendancePageState extends State<AttendancePage> with SingleTickerProvid
   late TabController _tabController;
   
   bool get _isManager => widget.currentUser.role == 'admin' || widget.currentUser.isManager;
+  bool get _isClient => widget.currentUser.role == 'client';
 
   Key _leavesViewKey = UniqueKey();
 
@@ -39,6 +41,17 @@ class _AttendancePageState extends State<AttendancePage> with SingleTickerProvid
   }
 
   void _setupTabs() {
+    if (_isClient) {
+      _tabs = [
+        "Overview",
+        "Work",
+        "Chats",
+        "Documents",
+        "Profile",
+      ];
+      return;
+    }
+
     _tabs = [
       "Activities",
       "Dashboard",
@@ -66,19 +79,31 @@ class _AttendancePageState extends State<AttendancePage> with SingleTickerProvid
     const Color backgroundDark = Color(0xFF080808);
     const Color primaryRed = Color(0xFFDC2726);
 
-    List<Widget> views = [
-      AttendanceTimerView(userName: widget.currentUser),
-      DashboardView(currentUser: widget.currentUser),
-      MyLeavesView(key: _leavesViewKey),
-      DocumentManagementPage(isAdmin: false),
-      const AttendanceHistoryPage(),
-      ProfilePage(user: widget.currentUser, showScaffold: false),
-    ];
+    List<Widget> views = [];
 
-    if (_isManager) {
-      views.add(const ApprovalsView());
+    if (_isClient) {
+      views = [
+        ClientOverviewView(currentUser: widget.currentUser),
+        const ComingSoonPage(title: "Project Work"),
+        const ComingSoonPage(title: "Client Chats"),
+        const ComingSoonPage(title: "Shared Documents"),
+        ProfilePage(user: widget.currentUser, showScaffold: false),
+      ];
     } else {
-      views.add(const ComingSoonPage(title: "Feeds"));
+      views = [
+        AttendanceTimerView(userName: widget.currentUser),
+        DashboardView(currentUser: widget.currentUser),
+        MyLeavesView(key: _leavesViewKey),
+        DocumentManagementPage(isAdmin: false),
+        const AttendanceHistoryPage(),
+        ProfilePage(user: widget.currentUser, showScaffold: false),
+      ];
+
+      if (_isManager) {
+        views.add(const ApprovalsView());
+      } else {
+        views.add(const ComingSoonPage(title: "Feeds"));
+      }
     }
 
     return Scaffold(
@@ -117,6 +142,7 @@ class _AttendancePageState extends State<AttendancePage> with SingleTickerProvid
   }
 
   Widget? _buildFAB(Color primaryRed) {
+    if (_isClient) return null;
     // Index 2 is Leaves
     if (_tabController.index == 2) {
       return FloatingActionButton.extended(

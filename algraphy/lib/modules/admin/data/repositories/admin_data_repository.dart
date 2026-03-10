@@ -179,7 +179,47 @@ class AdminRepository {
     }
   }
 
-  // 6. Leave Management (Admin Override)
+  // 6. Organization Attendance Logs
+  Future<List<Map<String, dynamic>>> getOrganizationAttendance({String? employeeId}) async {
+    try {
+      final token = await _getToken();
+      if (token == null) throw Exception("Unauthorized");
+
+      final url = employeeId != null 
+          ? 'org_attendance_logs&employee_id=$employeeId' 
+          : 'org_attendance_logs';
+
+      final response = await _api.get(url, token: token);
+      if (response['status'] == 'success') {
+        return List<Map<String, dynamic>>.from(response['data'] ?? []);
+      }
+      return [];
+    } catch (e) {
+      debugPrint("Error fetching org attendance: $e");
+      return [];
+    }
+  }
+
+  // 7. Mark Attendance for Employee
+  Future<void> markEmployeeAttendance(String userId, String type) async {
+    try {
+      final token = await _getToken();
+      if (token == null) throw Exception("Unauthorized");
+
+      final response = await _api.post('mark_attendance', {
+        'employee_id': userId,
+        'type': type,
+      }, token: token);
+
+      if (response['status'] != 'success') {
+        throw Exception(response['message'] ?? "Failed to mark attendance");
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // 8. Leave Management (Admin Override)
   Future<List<dynamic>> getAllLeaves() async {
     try {
       final token = await _getToken();

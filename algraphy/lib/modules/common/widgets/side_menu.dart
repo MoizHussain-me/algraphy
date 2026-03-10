@@ -132,19 +132,19 @@ class SideMenu extends StatelessWidget {
                     if (currentUser.role != 'client') ...[
                       const Divider(color: Colors.white10),
                       // --- Organization / Modules (Internal Only) ---
-                      _buildMenuItem(context, icon: Icons.chat, label: 'Chats', routeName: AppRoutes.chats),
-                      _buildMenuItem(context, icon: Icons.work, label: 'Work', routeName: AppRoutes.work),
-                      _buildMenuItem(context, icon: Icons.article, label: 'Plans', routeName: AppRoutes.plans),
-                      _buildMenuItem(context, icon: Icons.emoji_people, label: 'Talents', routeName: AppRoutes.talents),
+                      // _buildMenuItem(context, icon: Icons.chat, label: 'Chats', routeName: AppRoutes.chats),
+                      // _buildMenuItem(context, icon: Icons.work, label: 'Work', routeName: AppRoutes.work),
+                      // _buildMenuItem(context, icon: Icons.article, label: 'Plans', routeName: AppRoutes.plans),
+                      // _buildMenuItem(context, icon: Icons.emoji_people, label: 'Talents', routeName: AppRoutes.talents),
                     ],
                     
                     const Divider(color: Colors.white10),
 
                     // --- Info & Support (Visible to All) ---
-                    _buildMenuItem(context, icon: Icons.miscellaneous_services, label: 'Services', routeName: AppRoutes.services),
-                    _buildMenuItem(context, icon: Icons.info, label: 'About', routeName: AppRoutes.about),
+                    // _buildMenuItem(context, icon: Icons.miscellaneous_services, label: 'Services', routeName: AppRoutes.services),
+                    // _buildMenuItem(context, icon: Icons.info, label: 'About', routeName: AppRoutes.about),
                     _buildMenuItem(context, icon: Icons.contact_mail, label: 'Contact', routeName: AppRoutes.contact),
-                    _buildMenuItem(context, icon: Icons.settings, label: 'Settings', routeName: AppRoutes.settings),
+                    // _buildMenuItem(context, icon: Icons.settings, label: 'Settings', routeName: AppRoutes.settings),
 
                     // --- Admin Section (Only for Admin/Manager) ---
                     if (currentUser.role == 'admin' || currentUser.role == 'manager') ...[
