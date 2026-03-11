@@ -1,24 +1,17 @@
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/api/api_client.dart';
-import '../../../../core/utils/constants.dart';
+import '../../../../core/services/session_service.dart';
 import '../../../auth/data/models/user_model.dart';
 
 class AdminRepository {
   final ApiClient _api = ApiClient();
 
-  // Helper to fetch the stored JWT token
-  Future<String?> _getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(AppConstants.tokenKey);
-  }
-
   // 1. Fetch All Employees
   Future<List<UserModel>> getAllEmployees() async {
     try {
-      final token = await _getToken();
+      final token = await SessionService.getToken();
       if (token == null) throw Exception("Unauthorized");
 
       final response = await _api.get('all_employees', token: token);
@@ -52,7 +45,7 @@ class AdminRepository {
   // 2. Fetch Admin Dashboard Stats
   Future<Map<String, dynamic>> getAdminStats() async {
     try {
-      final token = await _getToken();
+      final token = await SessionService.getToken();
       if (token == null) throw Exception("Unauthorized");
 
       final response = await _api.get('admin_dashboard_stats', token: token);
@@ -70,7 +63,7 @@ class AdminRepository {
   // 3. Fetch Departments
   Future<List<String>> getDepartments() async {
     try {
-      final token = await _getToken();
+      final token = await SessionService.getToken();
       if (token == null) throw Exception("Unauthorized");
 
       final response = await _api.get('get_departments', token: token);
@@ -91,7 +84,7 @@ class AdminRepository {
     Uint8List? profilePicBytes,
   }) async {
     try {
-      final token = await _getToken();
+      final token = await SessionService.getToken();
       if (token == null) throw Exception("Unauthorized");
 
       final Map<String, dynamic> rawData = user.toMap();
@@ -138,7 +131,7 @@ class AdminRepository {
     Uint8List? profilePicBytes,
   }) async {
     try {
-      final token = await _getToken();
+      final token = await SessionService.getToken();
       if (token == null) throw Exception("Unauthorized");
 
       final Map<String, dynamic> rawData = user.toMap();
@@ -182,7 +175,7 @@ class AdminRepository {
   // 6. Organization Attendance Logs
   Future<List<Map<String, dynamic>>> getOrganizationAttendance({String? employeeId}) async {
     try {
-      final token = await _getToken();
+      final token = await SessionService.getToken();
       if (token == null) throw Exception("Unauthorized");
 
       final url = employeeId != null 
@@ -203,7 +196,7 @@ class AdminRepository {
   // 7. Mark Attendance for Employee
   Future<void> markEmployeeAttendance(String userId, String type) async {
     try {
-      final token = await _getToken();
+      final token = await SessionService.getToken();
       if (token == null) throw Exception("Unauthorized");
 
       final response = await _api.post('mark_attendance', {
@@ -222,10 +215,10 @@ class AdminRepository {
   // 8. Leave Management (Admin Override)
   Future<List<dynamic>> getAllLeaves() async {
     try {
-      final token = await _getToken();
+      final token = await SessionService.getToken();
       if (token == null) throw Exception("Unauthorized");
 
-      final response = await _api.get('admin_all_leaves', token: token);
+      final response = await _api.get('all_leaves', token: token);
       if (response['status'] == 'success') {
         return response['data'] ?? [];
       }
@@ -237,17 +230,54 @@ class AdminRepository {
 
   Future<void> updateLeaveStatus(String requestId, String status, String comment) async {
     try {
-      final token = await _getToken();
+      final token = await SessionService.getToken();
       if (token == null) throw Exception("Unauthorized");
 
-      final response = await _api.post('admin_update_leave_status', {
+      final response = await _api.post('process_leave', {
         'request_id': requestId,
         'status': status,
-        'admin_comment': comment,
+        'comment': comment,
       }, token: token);
       
       if (response['status'] != 'success') {
         throw Exception(response['message']);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // 9. Soft Delete Account (Admin removing an employee)
+  Future<void> softDeleteAccount(String userId) async {
+    try {
+      final token = await SessionService.getToken();
+      if (token == null) throw Exception("Unauthorized");
+
+      final response = await _api.post('soft_delete_account', {
+        'user_id': userId,
+      }, token: token);
+
+      if (response['status'] != 'success') {
+        throw Exception(response['message'] ?? 'Failed to delete account');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // 10. Update Account Status (Enable / Disable an employee)
+  Future<void> updateAccountStatus(String userId, bool isActive) async {
+    try {
+      final token = await SessionService.getToken();
+      if (token == null) throw Exception("Unauthorized");
+
+      final response = await _api.post('update_account_status', {
+        'user_id': userId,
+        'is_active': isActive ? 1 : 0,
+      }, token: token);
+
+      if (response['status'] != 'success') {
+        throw Exception(response['message'] ?? 'Failed to update account status');
       }
     } catch (e) {
       rethrow;

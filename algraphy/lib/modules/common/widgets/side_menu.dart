@@ -105,7 +105,7 @@ class SideMenu extends StatelessWidget {
       onTap: () {
         if (!isPersistent) Navigator.of(context).pop();
         if (routeName != activeRoute) {
-          Navigator.of(context).pushNamed(routeName);
+          Navigator.of(context).pushReplacementNamed(routeName);
         }
       },
     );

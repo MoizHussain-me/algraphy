@@ -1,21 +1,15 @@
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/api/api_client.dart';
-import '../../../../core/utils/constants.dart';
+import '../../../../core/services/session_service.dart';
 
 class EmployeeRepository {
   final ApiClient _api = ApiClient();
-
-  Future<String?> _getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(AppConstants.tokenKey);
-  }
 
   // ==========================================
   // MODULE 1: ATTENDANCE
   // ==========================================
 
   Future<void> checkIn() async {
-    final token = await _getToken();
+    final token = await SessionService.getToken();
     if (token == null) throw Exception("Not authenticated");
 
     final response = await _api.post('check_in', {}, token: token);
@@ -26,7 +20,7 @@ class EmployeeRepository {
   }
 
   Future<void> toggleBreak(String status) async {
-    final token = await _getToken();
+    final token = await SessionService.getToken();
     if (token == null) throw Exception("Not authenticated");
 
     final response = await _api.post('toggle_break', {'status': status}, token: token);
@@ -37,7 +31,7 @@ class EmployeeRepository {
   }
 
   Future<void> checkOut() async {
-    final token = await _getToken();
+    final token = await SessionService.getToken();
     if (token == null) throw Exception("Not authenticated");
 
     final response = await _api.post('check_out', {}, token: token);
@@ -48,7 +42,7 @@ class EmployeeRepository {
   }
 
   Future<Map<String, dynamic>?> getTodayStatus() async {
-    final token = await _getToken();
+    final token = await SessionService.getToken();
     if (token == null) throw Exception("Not authenticated");
 
     try {
@@ -65,7 +59,7 @@ class EmployeeRepository {
   }
 
   Future<List<Map<String, dynamic>>> getAttendanceHistory() async {
-    final token = await _getToken();
+    final token = await SessionService.getToken();
     if (token == null) throw Exception("Not authenticated");
 
     final response = await _api.get('my_attendance_history', token: token);
@@ -82,7 +76,7 @@ class EmployeeRepository {
   // ==========================================
 
   Future<Map<String, dynamic>> getDashboardStats() async {
-    final token = await _getToken();
+    final token = await SessionService.getToken();
     if (token == null) throw Exception("Not authenticated");
 
     final response = await _api.get('dashboard_stats', token: token);
@@ -100,7 +94,7 @@ class EmployeeRepository {
 
   // 1. Get My Leaves (History & Balance)
   Future<Map<String, dynamic>> getMyLeaves() async {
-    final token = await _getToken();
+    final token = await SessionService.getToken();
     if (token == null) throw Exception("Not authenticated");
 
     final response = await _api.get('my_leaves', token: token);
@@ -115,7 +109,7 @@ class EmployeeRepository {
 
   // 2. Apply for Leave
   Future<void> applyLeave(Map<String, dynamic> leaveData) async {
-    final token = await _getToken();
+    final token = await SessionService.getToken();
     if (token == null) throw Exception("Not authenticated");
 
     // Route matches 'apply_leave' in api.php
@@ -128,7 +122,7 @@ class EmployeeRepository {
 
   // 3. Get Employee List (For To/CC Pickers)
   Future<List<Map<String, dynamic>>> getEmployeeList() async {
-    final token = await _getToken();
+    final token = await SessionService.getToken();
     if (token == null) throw Exception("Not authenticated");
 
     final response = await _api.get('get_employee_list', token: token);
@@ -142,7 +136,7 @@ class EmployeeRepository {
 
   // 3. Get Team Requests (For Managers)
   Future<List<dynamic>> getTeamLeaveRequests() async {
-    final token = await _getToken();
+    final token = await SessionService.getToken();
     if (token == null) throw Exception("Not authenticated");
 
     final response = await _api.get('team_requests', token: token);
@@ -156,7 +150,7 @@ class EmployeeRepository {
 
   // 4. Process Request (Approve/Reject)
   Future<void> processLeaveRequest(String requestId, String status, String comment) async {
-    final token = await _getToken();
+    final token = await SessionService.getToken();
     if (token == null) throw Exception("Not authenticated");
 
     final body = {

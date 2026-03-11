@@ -5,6 +5,7 @@ class UserModel {
   final String password;
   final String role;
   final bool mustChangePassword;
+  final bool isActive; // Whether the account is enabled (is_active = 1)
   
   // NEW: Hierarchy Logic
   final int directReportsCount;
@@ -65,6 +66,7 @@ class UserModel {
   UserModel({
     required this.id, required this.email, required this.password,
     this.role = "employee", this.mustChangePassword = true,
+    this.isActive = true,
     this.directReportsCount = 0, 
     this.firstName, this.lastName, this.nickName, this.employeeId, this.employeeCode, this.profilePicture,
     this.salary, this.lastMonthCommission, this.employeeHourlyRate, this.iban,
@@ -120,6 +122,7 @@ class UserModel {
       password: '', 
       role: m['role'] ?? 'employee',
       mustChangePassword: mustChange,
+      isActive: _parseBool(m['is_active'], defaultVal: true),
       directReportsCount: int.tryParse(m['direct_reports_count']?.toString() ?? '0') ?? 0,
       
       firstName: m['first_name'] ?? m['name'], 
@@ -169,6 +172,15 @@ class UserModel {
     );
   }
 
+  // Utility: handles bool/int/String from PHP
+  static bool _parseBool(dynamic val, {bool defaultVal = false}) {
+    if (val == null) return defaultVal;
+    if (val is bool) return val;
+    if (val is int) return val == 1;
+    if (val is String) return val == '1' || val.toLowerCase() == 'true';
+    return defaultVal;
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -177,6 +189,7 @@ class UserModel {
       'email': email,
       'role': role,
       'must_change_password': mustChangePassword,
+      'is_active': isActive ? 1 : 0,
       'direct_reports_count': directReportsCount,
 
       // EMPLOYEES TABLE
@@ -264,6 +277,7 @@ class UserModel {
     String? password,
     String? role,
     bool? mustChangePassword,
+    bool? isActive,
     int? directReportsCount,
     String? firstName,
     String? lastName,
@@ -311,6 +325,7 @@ class UserModel {
       password: password ?? this.password,
       role: role ?? this.role,
       mustChangePassword: mustChangePassword ?? this.mustChangePassword,
+      isActive: isActive ?? this.isActive,
       directReportsCount: directReportsCount ?? this.directReportsCount,
       firstName: firstName ?? this.firstName,
       lastName: lastName ?? this.lastName,
