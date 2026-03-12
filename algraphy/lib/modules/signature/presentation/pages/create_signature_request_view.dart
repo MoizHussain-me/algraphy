@@ -23,7 +23,6 @@ class _CreateSignatureRequestViewState extends State<CreateSignatureRequestView>
   final _formKey = GlobalKey<FormState>();
   final _titleCtrl = TextEditingController();
   
-  // State variables for coordinates and file
   PlatformFile? _selectedFile;
   double _xPos = 150.0;
   double _yPos = 240.0;
@@ -34,6 +33,7 @@ class _CreateSignatureRequestViewState extends State<CreateSignatureRequestView>
   bool _isUploading = false;
 
   Future<void> _pickExpiryDate() async {
+    final theme = Theme.of(context);
     final picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now().add(const Duration(days: 7)),
@@ -41,12 +41,10 @@ class _CreateSignatureRequestViewState extends State<CreateSignatureRequestView>
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) {
         return Theme(
-          data: ThemeData.dark().copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Color(0xFFDC2726),
+          data: theme.copyWith(
+            colorScheme: theme.colorScheme.copyWith(
+              primary: const Color(0xFFDC2726),
               onPrimary: Colors.white,
-              surface: Color(0xFF1C1C1C),
-              onSurface: Colors.white,
             ),
           ),
           child: child!,
@@ -66,12 +64,10 @@ class _CreateSignatureRequestViewState extends State<CreateSignatureRequestView>
     );
 
     if (result != null) {
-      // Set the file in state BEFORE opening the designer
       setState(() {
         _selectedFile = result.files.single;
       });
 
-      // OPEN THE DESIGNER AND WAIT
       final designerData = await Navigator.push(
         context,
         MaterialPageRoute(
@@ -79,23 +75,20 @@ class _CreateSignatureRequestViewState extends State<CreateSignatureRequestView>
             pdfBytes: _selectedFile?.bytes,
             pdfFile: kIsWeb ? null : File(_selectedFile!.path!),
             onPositionSelected: (x, y, page) {
-               // Internal update
-               _xPos = x;
-               _yPos = y;
-               _pageNum = page;
+              _xPos = x;
+              _yPos = y;
+              _pageNum = page;
             },
           ),
         ),
       );
 
-      // CATCH THE RETURNED COORDINATES HERE
       if (designerData != null) {
         setState(() {
           _xPos = designerData['x']?.toDouble() ?? 150.0;
           _yPos = designerData['y']?.toDouble() ?? 240.0;
           _pageNum = designerData['page'] ?? 1;
         });
-        logger.d("Coordinates Captured: X=$_xPos, Y=$_yPos, Page=$_pageNum");
       }
     }
   }
@@ -108,11 +101,8 @@ class _CreateSignatureRequestViewState extends State<CreateSignatureRequestView>
       return;
     }
 
-    // Safety check for the Foreign Key
     if (_selectedEmployeeId == null || _selectedEmployeeId!.isEmpty) {
-       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Invalid Employee selected. Please try again.")),
-      );
+       _showSnackbar("Invalid Employee selected", Colors.orange);
       return;
     }
 
@@ -121,24 +111,6 @@ class _CreateSignatureRequestViewState extends State<CreateSignatureRequestView>
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString(AppConstants.tokenKey);
-
-      // DEBUG: Print exactly what is being sent to catch the 1452 source
-      logger.i("--- UPLOADING SIGNATURE REQUEST ---");
-      logger.d("Target Employee ID: $_selectedEmployeeId");
-      logger.d("Document Title: ${_titleCtrl.text}");
-
-      // Prepare multi-part form data
-      // FormData formData = FormData.fromMap({
-      //   "employee_id": _selectedEmployeeId, // This MUST be a valid integer ID in the DB
-      //   "document_title": _titleCtrl.text.trim(),
-      //   "x_pos": _xPos.toInt().toString(),
-      //   "y_pos": _yPos.toInt().toString(),
-      //   "page_num": _pageNum.toString(),
-      //   "pdf_file": kIsWeb
-      //       ? MultipartFile.fromBytes(_selectedFile!.bytes!, filename: _selectedFile!.name)
-      //       : await MultipartFile.fromFile(_selectedFile!.path!, filename: _selectedFile!.name),
-      // });
-
 
       final Map<String, dynamic> dataMap = {
         "employee_id": _selectedEmployeeId,
@@ -155,40 +127,39 @@ class _CreateSignatureRequestViewState extends State<CreateSignatureRequestView>
         dataMap["expiry_date"] = DateFormat('yyyy-MM-dd').format(_expiryDate!);
       }
 
-      final formData = FormData.fromMap(dataMap);
-
       final response = await Dio().post(
         "${AppConstants.apiBaseUrl}?action=create_signature_request",
-        data: formData,
+        data: FormData.fromMap(dataMap),
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
       if (response.data['status'] == 'success') {
         if (mounted) Navigator.pop(context, true);
       } else {
-        // This will now catch and show the custom error message from your PHP try-catch
         throw Exception(response.data['message']);
       }
     } catch (e) {
-      logger.e("Upload Error Exception: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error: $e"), 
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 5),
-        ),
-      );
+      _showSnackbar("Error: $e", Colors.red);
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }
   }
 
+  void _showSnackbar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: color),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF1C1C1C),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: const EdgeInsets.all(24),
       child: Form(
@@ -197,25 +168,25 @@ class _CreateSignatureRequestViewState extends State<CreateSignatureRequestView>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Request Document Signature", 
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            Text("Request Document Signature", 
+              style: TextStyle(
+                color: theme.textTheme.titleLarge?.color, 
+                fontSize: 18, 
+                fontWeight: FontWeight.bold
+              )
+            ),
             const SizedBox(height: 20),
 
             // Employee Dropdown
             DropdownButtonFormField<String>(
-              dropdownColor: const Color(0xFF2C2C2C),
-              style: const TextStyle(color: Colors.white),
-              decoration: _inputDecoration("Select Employee", Icons.person),
+              dropdownColor: isDark ? const Color(0xFF2C2C2C) : theme.cardColor,
+              style: TextStyle(color: theme.textTheme.bodyLarge?.color),
+              decoration: _inputDecoration(context, "Select Employee", Icons.person),
               items: widget.employees.map((emp) => DropdownMenuItem(
                 value: emp.employeeId.toString(), 
                 child: Text("${emp.fullName} ${emp.employeeCode}"),
               )).toList(),
-              onChanged: (val) {
-                setState(() {
-                  _selectedEmployeeId = val;
-                });
-                logger.d("Selected Database Primary Key (employee_id): $_selectedEmployeeId");
-              },
+              onChanged: (val) => setState(() => _selectedEmployeeId = val),
               validator: (v) => v == null ? "Required" : null,
             ),
             const SizedBox(height: 16),
@@ -223,8 +194,8 @@ class _CreateSignatureRequestViewState extends State<CreateSignatureRequestView>
             // Title Field
             TextFormField(
               controller: _titleCtrl,
-              style: const TextStyle(color: Colors.white),
-              decoration: _inputDecoration("Document Title", Icons.title),
+              style: TextStyle(color: theme.textTheme.bodyLarge?.color),
+              decoration: _inputDecoration(context, "Document Title", Icons.title),
               validator: (v) => v!.isEmpty ? "Required" : null,
             ),
             const SizedBox(height: 16),
@@ -233,10 +204,10 @@ class _CreateSignatureRequestViewState extends State<CreateSignatureRequestView>
             InkWell(
               onTap: _pickExpiryDate,
               child: InputDecorator(
-                decoration: _inputDecoration("Expiry Date (Optional)", Icons.event),
+                decoration: _inputDecoration(context, "Expiry Date (Optional)", Icons.event),
                 child: Text(
                   _expiryDate == null ? "No Expiry" : DateFormat('MMM dd, yyyy').format(_expiryDate!),
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: theme.textTheme.bodyLarge?.color),
                 ),
               ),
             ),
@@ -248,9 +219,13 @@ class _CreateSignatureRequestViewState extends State<CreateSignatureRequestView>
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2C2C2C),
+                  color: isDark ? const Color(0xFF2C2C2C) : theme.scaffoldBackgroundColor,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _selectedFile != null ? Colors.green : Colors.white10),
+                  border: Border.all(
+                    color: _selectedFile != null 
+                        ? Colors.green 
+                        : theme.dividerColor.withOpacity(0.1)
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -261,7 +236,11 @@ class _CreateSignatureRequestViewState extends State<CreateSignatureRequestView>
                         _selectedFile != null 
                           ? "${_selectedFile!.name} (Pos Set)" 
                           : "Tap to select PDF & set position",
-                        style: TextStyle(color: _selectedFile != null ? Colors.white : Colors.grey),
+                        style: TextStyle(
+                          color: _selectedFile != null 
+                              ? theme.textTheme.bodyLarge?.color 
+                              : Colors.grey
+                        ),
                       ),
                     ),
                     if (_selectedFile != null) const Icon(Icons.check_circle, color: Colors.green, size: 20),
@@ -279,10 +258,11 @@ class _CreateSignatureRequestViewState extends State<CreateSignatureRequestView>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFDC2726),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
                 ),
                 onPressed: _isUploading ? null : _handleUpload,
                 child: _isUploading 
-                  ? const CircularProgressIndicator(color: Colors.white)
+                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                   : const Text("Create Request", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ),
             ),
@@ -292,16 +272,22 @@ class _CreateSignatureRequestViewState extends State<CreateSignatureRequestView>
     );
   }
 
-  InputDecoration _inputDecoration(String label, IconData icon) {
+  InputDecoration _inputDecoration(BuildContext context, String label, IconData icon) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return InputDecoration(
       labelText: label,
       labelStyle: const TextStyle(color: Colors.grey),
       prefixIcon: Icon(icon, color: Colors.grey),
       filled: true,
-      fillColor: const Color(0xFF2C2C2C),
+      fillColor: isDark ? const Color(0xFF2C2C2C) : theme.scaffoldBackgroundColor,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFDC2726))),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12), 
+        borderSide: const BorderSide(color: Color(0xFFDC2726), width: 1.5)
+      ),
     );
   }
 }

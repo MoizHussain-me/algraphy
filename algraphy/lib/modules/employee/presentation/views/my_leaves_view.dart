@@ -24,13 +24,9 @@ class _MyLeavesViewState extends State<MyLeavesView> {
   Future<void> _fetchMyLeaves() async {
     try {
       final data = await GetIt.I<EmployeeRepository>().getMyLeaves();
-      
       if (mounted) {
         setState(() {
-          // FIX: Access fields from the new API structure
           _balance = int.tryParse(data['balance']?.toString() ?? '0') ?? 0;
-          
-          // FIX: The list is now under the key 'history'
           _history = List<Map<String, dynamic>>.from(data['history'] ?? []);
           _isLoading = false;
         });
@@ -52,29 +48,37 @@ class _MyLeavesViewState extends State<MyLeavesView> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFFDC2726)));
+      return Center(child: CircularProgressIndicator(color: theme.primaryColor));
     }
 
     return RefreshIndicator(
       onRefresh: _fetchMyLeaves,
-      color: const Color(0xFFDC2726),
-      backgroundColor: const Color(0xFF1E1E1E),
+      color: theme.primaryColor,
+      backgroundColor: theme.cardTheme.color, // Theme aware background
       child: ListView(
         padding: const EdgeInsets.all(16),
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
+          // Annual Leave Balance Card (Brand Red Style)
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFDC2726), Color(0xFFB91C1C)],
+              gradient: LinearGradient(
+                colors: [theme.primaryColor, const Color(0xFFB91C1C)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
-                BoxShadow(color: const Color(0xFFDC2726).withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4)),
+                BoxShadow(
+                  color: theme.primaryColor.withOpacity(isDark ? 0.3 : 0.15),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
               ],
             ),
             child: Row(
@@ -83,9 +87,11 @@ class _MyLeavesViewState extends State<MyLeavesView> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("Annual Leave Balance", style: TextStyle(color: Colors.white70, fontSize: 14)),
+                    const Text("Annual Leave Balance", 
+                        style: TextStyle(color: Colors.white70, fontSize: 14)),
                     const SizedBox(height: 4),
-                    Text("$_balance Days", style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+                    Text("$_balance Days", 
+                        style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
                   ],
                 ),
                 Container(
@@ -96,8 +102,18 @@ class _MyLeavesViewState extends State<MyLeavesView> {
               ],
             ),
           ),
+          
           const SizedBox(height: 24),
-          const Text("Request History", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          
+          Text(
+            "Request History", 
+            style: TextStyle(
+              color: theme.textTheme.bodyLarge?.color, 
+              fontSize: 18, 
+              fontWeight: FontWeight.bold
+            )
+          ),
+          
           const SizedBox(height: 12),
           
           if (_history.isEmpty)
@@ -107,20 +123,40 @@ class _MyLeavesViewState extends State<MyLeavesView> {
             ),
 
           ..._history.map((req) => Card(
-            color: const Color(0xFF1E1E1E),
+            color: theme.cardTheme.color, // Theme aware card color
+            elevation: theme.cardTheme.elevation,
             margin: const EdgeInsets.only(bottom: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: theme.cardTheme.shape,
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              title: Text(req['leave_type'] ?? 'General', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              title: Text(
+                req['leave_type'] ?? 'General', 
+                style: TextStyle(
+                  color: theme.textTheme.bodyLarge?.color, 
+                  fontWeight: FontWeight.bold
+                )
+              ),
               subtitle: Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("${req['start_date']} to ${req['end_date']} • ${req['days_count']} Days", style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                    Text(
+                      "${req['start_date']} to ${req['end_date']} • ${req['days_count']} Days", 
+                      style: TextStyle(
+                        color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7), 
+                        fontSize: 12
+                      )
+                    ),
                     if (req['reason'] != null && req['reason'].toString().isNotEmpty)
-                      Text("Reason: ${req['reason']}", style: const TextStyle(color: Colors.white38, fontSize: 12, fontStyle: FontStyle.italic)),
+                      Text(
+                        "Reason: ${req['reason']}", 
+                        style: TextStyle(
+                          color: theme.textTheme.bodySmall?.color?.withOpacity(0.5), 
+                          fontSize: 12, 
+                          fontStyle: FontStyle.italic
+                        )
+                      ),
                   ],
                 ),
               ),
@@ -131,7 +167,14 @@ class _MyLeavesViewState extends State<MyLeavesView> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: _getStatusColor(req['status'] ?? 'Pending').withOpacity(0.5)),
                 ),
-                child: Text(req['status'] ?? 'Pending', style: TextStyle(color: _getStatusColor(req['status'] ?? 'Pending'), fontWeight: FontWeight.bold, fontSize: 12)),
+                child: Text(
+                  req['status'] ?? 'Pending', 
+                  style: TextStyle(
+                    color: _getStatusColor(req['status'] ?? 'Pending'), 
+                    fontWeight: FontWeight.bold, 
+                    fontSize: 12
+                  )
+                ),
               ),
             ),
           )),

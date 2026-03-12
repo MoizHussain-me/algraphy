@@ -20,12 +20,6 @@ class ProfilePage extends StatelessWidget {
     this.showScaffold = true,
   });
 
-  // Color Palette
-  static const Color accentRed = Color(0xFFDC2726);
-  static const Color backgroundDark = Color(0xFF0A0A0A);
-  static const Color surfaceColor = Color(0xFF161616);
-  static const Color cardBorder = Color(0xFF262626);
-
   String _formatDate(String? dateStr) {
     if (dateStr == null || dateStr.isEmpty || dateStr == "0000-00-00") return "-";
     try {
@@ -41,24 +35,22 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final bool isClient = user.role == 'client';
 
     Widget pageContent = CustomScrollView(
       physics: const BouncingScrollPhysics(),
       slivers: [
-        // 1. Sleek Header
         SliverToBoxAdapter(child: _buildHeader(context)),
-
-        // 2. Action Bar (Quick Contact)
-        SliverToBoxAdapter(child: _buildQuickActions()),
-
-        // 3. Information Grid/List
+        SliverToBoxAdapter(child: _buildQuickActions(context)),
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
               if (user.aboutMe != null && user.aboutMe!.isNotEmpty) ...[
                 _buildSection(
+                  context: context,
                   title: "About Me",
                   icon: Icons.info_outline,
                   children: [
@@ -66,7 +58,7 @@ class ProfilePage extends StatelessWidget {
                       padding: const EdgeInsets.all(20),
                       child: Text(
                         user.aboutMe!,
-                        style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
+                        style: TextStyle(color: theme.textTheme.bodyMedium?.color, fontSize: 14, height: 1.5),
                       ),
                     ),
                   ],
@@ -76,12 +68,13 @@ class ProfilePage extends StatelessWidget {
 
               if (isClient) ...[
                 _buildSection(
+                  context: context,
                   title: "Business Information",
                   icon: Icons.business_outlined,
                   children: [
-                    _buildInfoTile("Company / Brand", user.companyName ?? "-", Icons.storefront_outlined),
-                    _buildInfoTile("Industry", user.industry ?? "-", Icons.category_outlined),
-                    _buildInfoTile("Services Needed", user.servicesNeeded ?? "-", Icons.handyman_outlined),
+                    _buildInfoTile(context, "Company / Brand", user.companyName ?? "-", Icons.storefront_outlined),
+                    _buildInfoTile(context, "Industry", user.industry ?? "-", Icons.category_outlined),
+                    _buildInfoTile(context, "Services Needed", user.servicesNeeded ?? "-", Icons.handyman_outlined),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -89,101 +82,106 @@ class ProfilePage extends StatelessWidget {
 
               if (!isClient) ...[
                 _buildSection(
+                  context: context,
                   title: "Work Information",
                   icon: Icons.work_outline,
                   children: [
-                    _buildInfoTile("Employee ID", user.employeeId ?? "-", Icons.badge_outlined),
-                    _buildInfoTile("Employee Code", user.employeeCode ?? "-", Icons.qr_code_outlined),
-                    _buildInfoTile("Nick Name", user.nickName ?? "-", Icons.face_outlined),
-                    _buildInfoTile("Reporting To", user.reportingManagerName ?? "-", Icons.account_tree_outlined),
-                    _buildInfoTile("Date of Joining", _formatDate(user.dateOfJoining), Icons.calendar_month_outlined),
-                    _buildInfoTile("Department", user.department ?? "-", Icons.lan_outlined),
-                    _buildInfoTile("Location", user.location ?? "-", Icons.location_on_outlined),
-                    _buildInfoTile("Designation", user.designation ?? "-", Icons.work_outline),
-                    _buildInfoTile("Employment Type", user.employmentType ?? "-", Icons.assignment_ind_outlined),
-                    _buildInfoTile("Status", user.employeeStatus ?? "-", Icons.check_circle_outline),
+                    _buildInfoTile(context, "Employee ID", user.employeeId ?? "-", Icons.badge_outlined),
+                    _buildInfoTile(context, "Employee Code", user.employeeCode ?? "-", Icons.qr_code_outlined),
+                    _buildInfoTile(context, "Nick Name", user.nickName ?? "-", Icons.face_outlined),
+                    _buildInfoTile(context, "Reporting To", user.reportingManagerName ?? "-", Icons.account_tree_outlined),
+                    _buildInfoTile(context, "Date of Joining", _formatDate(user.dateOfJoining), Icons.calendar_month_outlined),
+                    _buildInfoTile(context, "Department", user.department ?? "-", Icons.lan_outlined),
+                    _buildInfoTile(context, "Location", user.location ?? "-", Icons.location_on_outlined),
+                    _buildInfoTile(context, "Designation", user.designation ?? "-", Icons.work_outline),
+                    _buildInfoTile(context, "Employment Type", user.employmentType ?? "-", Icons.assignment_ind_outlined),
+                    _buildInfoTile(context, "Status", user.employeeStatus ?? "-", Icons.check_circle_outline),
                   ],
                 ),
                 const SizedBox(height: 16),
                 _buildSection(
+                  context: context,
                   title: "Financial Information",
                   icon: Icons.account_balance_wallet_outlined,
                   children: [
-                    _buildInfoTile("Monthly Salary", _formatCurrency(user.salary), Icons.payments_outlined),
-                    _buildInfoTile("Hourly Rate", _formatCurrency(user.employeeHourlyRate), Icons.timer_outlined),
-                    _buildInfoTile("Last Month Commission", _formatCurrency(user.lastMonthCommission), Icons.trending_up),
-                    _buildInfoTile("IBAN", user.iban ?? "-", Icons.credit_card_outlined),
+                    _buildInfoTile(context, "Monthly Salary", _formatCurrency(user.salary), Icons.payments_outlined),
+                    _buildInfoTile(context, "Hourly Rate", _formatCurrency(user.employeeHourlyRate), Icons.timer_outlined),
+                    _buildInfoTile(context, "Last Month Commission", _formatCurrency(user.lastMonthCommission), Icons.trending_up),
+                    _buildInfoTile(context, "IBAN", user.iban ?? "-", Icons.credit_card_outlined),
                   ],
                 ),
                 const SizedBox(height: 16),
                 _buildSection(
+                  context: context,
                   title: "Experience & Expertise",
                   icon: Icons.psychology_outlined,
                   children: [
-                    _buildInfoTile("Current Experience", user.currentExperience ?? "-", Icons.history_toggle_off),
-                    _buildInfoTile("Total Experience", user.totalExperience ?? "-", Icons.history),
-                    _buildInfoTile("Expertise", user.expertise ?? "-", Icons.star_outline),
-                    _buildInfoTile("Source of Hire", user.sourceOfHire ?? "-", Icons.campaign_outlined),
-                    _buildInfoTile("Job Description", user.jobDescription ?? "-", Icons.description_outlined),
-                    _buildInfoTile("Sub Job Description", user.subJobDescription ?? "-", Icons.subject_outlined),
+                    _buildInfoTile(context, "Current Experience", user.currentExperience ?? "-", Icons.history_toggle_off),
+                    _buildInfoTile(context, "Total Experience", user.totalExperience ?? "-", Icons.history),
+                    _buildInfoTile(context, "Expertise", user.expertise ?? "-", Icons.star_outline),
+                    _buildInfoTile(context, "Source of Hire", user.sourceOfHire ?? "-", Icons.campaign_outlined),
+                    _buildInfoTile(context, "Job Description", user.jobDescription ?? "-", Icons.description_outlined),
+                    _buildInfoTile(context, "Sub Job Description", user.subJobDescription ?? "-", Icons.subject_outlined),
                   ],
                 ),
                 const SizedBox(height: 16),
               ],
 
               _buildSection(
+                context: context,
                 title: "Contact Details",
                 icon: Icons.contact_mail_outlined,
                 children: [
-                  _buildInfoTile("Work Email", user.email, Icons.alternate_email),
-                  _buildInfoTile("Personal Email", user.personalEmailAddress ?? "-", Icons.email_outlined),
-                  _buildInfoTile("Mobile", user.personalMobileNumber ?? "-", Icons.phone_android),
+                  _buildInfoTile(context, "Work Email", user.email, Icons.alternate_email),
+                  _buildInfoTile(context, "Personal Email", user.personalEmailAddress ?? "-", Icons.email_outlined),
+                  _buildInfoTile(context, "Mobile", user.personalMobileNumber ?? "-", Icons.phone_android),
                   if (!isClient) ...[
-                    _buildInfoTile("Work Phone", user.workPhoneNumber ?? "-", Icons.phone_callback_outlined),
-                    _buildInfoTile("Extension", user.extension ?? "-", Icons.phone_forwarded_outlined),
-                    _buildInfoTile("Seating", user.seatingLocation ?? "-", Icons.chair_alt_outlined),
+                    _buildInfoTile(context, "Work Phone", user.workPhoneNumber ?? "-", Icons.phone_callback_outlined),
+                    _buildInfoTile(context, "Extension", user.extension ?? "-", Icons.phone_forwarded_outlined),
+                    _buildInfoTile(context, "Seating", user.seatingLocation ?? "-", Icons.chair_alt_outlined),
                   ],
                 ],
               ),
               const SizedBox(height: 16),
               if (!isClient) ...[
                 _buildSection(
+                  context: context,
                   title: "Addresses",
                   icon: Icons.home_outlined,
                   children: [
-                    _buildInfoTile("Present Address", user.presentAddress ?? "-", Icons.location_searching),
-                    _buildInfoTile("Permanent Address", user.permanentAddress ?? "-", Icons.house_outlined),
+                    _buildInfoTile(context, "Present Address", user.presentAddress ?? "-", Icons.location_searching),
+                    _buildInfoTile(context, "Permanent Address", user.permanentAddress ?? "-", Icons.house_outlined),
                   ],
                 ),
                 const SizedBox(height: 16),
                 _buildSection(
+                  context: context,
                   title: "Personal Information",
                   icon: Icons.person_outline,
                   children: [
-                    _buildInfoTile("Birthday", _formatDate(user.dateOfBirth), Icons.cake_outlined),
-                    _buildInfoTile("Gender", user.gender ?? "-", Icons.fingerprint),
-                    _buildInfoTile("Marital Status", user.maritalStatus ?? "-", Icons.favorite_border),
+                    _buildInfoTile(context, "Birthday", _formatDate(user.dateOfBirth), Icons.cake_outlined),
+                    _buildInfoTile(context, "Gender", user.gender ?? "-", Icons.fingerprint),
+                    _buildInfoTile(context, "Marital Status", user.maritalStatus ?? "-", Icons.favorite_border),
                   ],
                 ),
               ],
               const SizedBox(height: 24),
 
-              // --- DELETE ACCOUNT (REQUIRED BY APPLE) ---
               if (user.role == 'client') ...[
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.05),
+                      color: Colors.red.withOpacity(isDark ? 0.05 : 0.02),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: Colors.red.withOpacity(0.1)),
                     ),
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
-                        const Text(
+                        Text(
                           "Account Management",
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
                         const Text(
@@ -222,21 +220,26 @@ class ProfilePage extends StatelessWidget {
         title: "Profile",
         currentUser: loggedInUser ?? user,
         currentRoute: AppRoutes.profile,
-        body: Container(color: backgroundDark, child: pageContent),
+        body: Container(color: theme.scaffoldBackgroundColor, child: pageContent),
       );
     }
-    return Scaffold(backgroundColor: backgroundDark, body: pageContent);
+    return Scaffold(backgroundColor: theme.scaffoldBackgroundColor, body: pageContent);
   }
 
   Widget _buildHeader(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF251010), backgroundDark],
+          colors: isDark 
+            ? [const Color(0xFF251010), theme.scaffoldBackgroundColor] 
+            : [const Color(0xFFFEECEC), theme.scaffoldBackgroundColor],
         ),
       ),
       child: Column(
@@ -247,16 +250,16 @@ class ProfilePage extends StatelessWidget {
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: accentRed.withOpacity(0.5), width: 2),
+                  border: Border.all(color: theme.primaryColor.withOpacity(0.5), width: 2),
                 ),
                 child: CircleAvatar(
                   radius: 55,
-                  backgroundColor: surfaceColor,
+                  backgroundColor: theme.cardColor,
                   backgroundImage: _getProfileImage(user.profilePicture),
                   child: user.profilePicture == null
                       ? Text(
                           user.firstName?[0] ?? "U",
-                          style: const TextStyle(fontSize: 36, color: Colors.white),
+                          style: TextStyle(fontSize: 36, color: theme.textTheme.bodyLarge?.color),
                         )
                       : null,
                 ),
@@ -278,18 +281,18 @@ class ProfilePage extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             user.fullName,
-            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, letterSpacing: -0.5),
+            style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontSize: 26, fontWeight: FontWeight.bold, letterSpacing: -0.5),
           ),
           if (user.role != 'client') ...[
             const SizedBox(height: 6),
             Text(
               user.designation?.toUpperCase() ?? 'STAFF',
-              style: TextStyle(color: accentRed.withOpacity(0.9), fontWeight: FontWeight.w600, fontSize: 13, letterSpacing: 1.2),
+              style: TextStyle(color: theme.primaryColor.withOpacity(0.9), fontWeight: FontWeight.w600, fontSize: 13, letterSpacing: 1.2),
             ),
             const SizedBox(height: 4),
             Text(
               user.department ?? 'General',
-              style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 14),
+              style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5), fontSize: 14),
             ),
           ],
         ],
@@ -297,33 +300,34 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickActions() {
+  Widget _buildQuickActions(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _actionIcon(Icons.phone, "Call"),
-          _actionIcon(Icons.message_rounded, "Message"),
-          _actionIcon(Icons.email_rounded, "Email"),
-          _actionIcon(Icons.share_rounded, "Share"),
+          _actionIcon(context, Icons.phone, "Call"),
+          _actionIcon(context, Icons.message_rounded, "Message"),
+          _actionIcon(context, Icons.email_rounded, "Email"),
+          _actionIcon(context, Icons.share_rounded, "Share"),
         ],
       ),
     );
   }
 
-  Widget _actionIcon(IconData icon, String label) {
+  Widget _actionIcon(BuildContext context, IconData icon, String label) {
+    final theme = Theme.of(context);
     return Column(
       children: [
         Container(
           height: 45,
           width: 45,
           decoration: BoxDecoration(
-            color: surfaceColor,
+            color: theme.cardColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: cardBorder),
+            border: Border.all(color: theme.dividerColor.withOpacity(0.1)),
           ),
-          child: Icon(icon, color: Colors.white70, size: 20),
+          child: Icon(icon, color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7), size: 20),
         ),
         const SizedBox(height: 6),
         Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
@@ -331,12 +335,13 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildSection({required String title, required IconData icon, required List<Widget> children}) {
+  Widget _buildSection({required BuildContext context, required String title, required IconData icon, required List<Widget> children}) {
+    final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: surfaceColor,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: cardBorder),
+        border: Border.all(color: theme.dividerColor.withOpacity(0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -345,16 +350,16 @@ class ProfilePage extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
             child: Row(
               children: [
-                Icon(icon, color: accentRed, size: 18),
+                Icon(icon, color: theme.primaryColor, size: 18),
                 const SizedBox(width: 8),
                 Text(
                   title,
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: theme.textTheme.bodyLarge?.color),
                 ),
               ],
             ),
           ),
-          const Divider(color: cardBorder, thickness: 1),
+          Divider(color: theme.dividerColor.withOpacity(0.1), thickness: 1),
           ...children,
           const SizedBox(height: 8),
         ],
@@ -362,14 +367,15 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoTile(String label, String value, IconData icon) {
+  Widget _buildInfoTile(BuildContext context, String label, String value, IconData icon) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: backgroundDark, borderRadius: BorderRadius.circular(8)),
+            decoration: BoxDecoration(color: theme.scaffoldBackgroundColor.withOpacity(0.5), borderRadius: BorderRadius.circular(8)),
             child: Icon(icon, color: Colors.grey[600], size: 18),
           ),
           const SizedBox(width: 16),
@@ -381,7 +387,7 @@ class ProfilePage extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                  style: TextStyle(color: theme.textTheme.bodyMedium?.color, fontSize: 13, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
@@ -397,12 +403,13 @@ class ProfilePage extends StatelessWidget {
   }
 
   void _showDeleteConfirmation(BuildContext context) {
+    final theme = Theme.of(context);
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: surfaceColor,
+        backgroundColor: theme.cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Delete Account?", style: TextStyle(color: Colors.white)),
+        title: Text("Delete Account?", style: TextStyle(color: theme.textTheme.bodyLarge?.color)),
         content: const Text(
           "Are you absolutely sure? This will permanently delete your profile and all associated data. This action cannot be undone.",
           style: TextStyle(color: Colors.grey),
@@ -414,7 +421,7 @@ class ProfilePage extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.pop(dialogContext); // Close dialog
+              Navigator.pop(dialogContext);
               context.read<AuthBloc>().add(DeleteAccountRequested());
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),

@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:get_it/get_it.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:algraphy/core/theme/colors.dart';
 
 class AttendanceTimerView extends StatefulWidget {
   final UserModel userName;
@@ -261,10 +262,9 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryRed = Color(0xFFDC2726);
-    const Color surfaceColor = Color(0xFF1C1C1C);
-    const Color textColor = Colors.white;
-    const Color textGrey = Colors.grey;
+    final theme = Theme.of(context);
+  final bool isDark = theme.brightness == Brightness.dark;
+  const Color textGrey = Colors.grey;
 
     // Derived States
     bool isOnDuty = _status == 'Present' || _status == 'On Break';
@@ -285,7 +285,7 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
           // Dynamic Greeting
           Text(
             "${_getGreeting()}, ${widget.userName.firstName}", 
-            style: const TextStyle(color: textColor, fontSize: 28, fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.displayLarge,
           ),
           const SizedBox(height: 32),
 
@@ -293,9 +293,10 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
           Container(
             padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
             decoration: BoxDecoration(
-              color: surfaceColor, 
+              color: Theme.of(context).cardTheme.color, 
               borderRadius: BorderRadius.circular(20), 
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5))]
+              boxShadow: [BoxShadow(color: Theme.of(context).cardTheme.shadowColor ?? Colors.black26, 
+              blurRadius: 10, offset: const Offset(0, 5))]
             ),
             child: Column(
               children: [
@@ -332,8 +333,8 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
                 // Main Timer
                 Text(
                   _formatDuration(_elapsedTime),
-                  style: const TextStyle(
-                    color: textColor, 
+                  style: TextStyle(
+                    color: isDark ? AppColors.white : AppColors.textBlack, 
                     fontSize: 64, 
                     fontWeight: FontWeight.w200, 
                     fontFeatures: [FontFeature.tabularFigures()]
@@ -407,7 +408,7 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
                           opacity: isOnBreak ? 0.5 : 1.0,
                           child: _buildCircleButton(
                             icon: Icons.stop,
-                            color: primaryRed,
+                            color: Theme.of(context).primaryColor,
                             label: "Check Out",
                             isSmall: false,
                           ),
@@ -429,15 +430,15 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
                 time: _formatTime(_checkInTime), 
                 icon: Icons.login, 
                 color: Colors.green, 
-                surfaceColor: surfaceColor
+                theme: theme,
               )),
               const SizedBox(width: 16),
               Expanded(child: _buildStatCard(
                 title: "Check Out", 
                 time: _formatTime(_checkOutTime), 
                 icon: Icons.logout, 
-                color: primaryRed, 
-                surfaceColor: surfaceColor
+                color: Theme.of(context).primaryColor, 
+                theme: theme,
               )),
             ],
           ),
@@ -478,15 +479,46 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
     );
   }
 
-  Widget _buildStatCard({required String title, required String time, required IconData icon, required Color color, required Color surfaceColor}) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: surfaceColor, borderRadius: BorderRadius.circular(16)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12)), Icon(icon, color: color, size: 18)]),
+ 
+Widget _buildStatCard({
+  required String title, 
+  required String time, 
+  required IconData icon, 
+  required Color color, 
+  required ThemeData theme, // Accepting theme instead of surfaceColor
+}) {
+  final isDark = theme.brightness == Brightness.dark;
+
+  return Container(
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: theme.colorScheme.surface, // Uses theme surface
+      borderRadius: BorderRadius.circular(16),
+      border: isDark ? null : Border.all(color: Colors.black.withOpacity(0.05)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start, 
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween, 
+          children: [
+            Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12)), 
+            Icon(icon, color: color, size: 18)
+          ]
+        ),
         const SizedBox(height: 12),
-        Text(time, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-      ]),
-    );
-  }
+        // ✅ FIXED: Now correctly uses theme logic
+        Text(
+          time, 
+          style: TextStyle(
+            color: isDark ? Colors.white : Colors.black87, 
+            fontSize: 20, 
+            fontWeight: FontWeight.bold
+          )
+        ),
+      ]
+    ),
+  );
+}
+
 }

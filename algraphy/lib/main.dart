@@ -8,6 +8,9 @@ import 'config/di/injector.dart';
 import 'config/routes/app_router.dart';
 import 'core/services/logger_service.dart';
 
+
+import 'core/theme/app_theme.dart';
+
 // Bloc
 import 'modules/auth/presentation/bloc/auth_bloc.dart';
 import 'modules/auth/presentation/bloc/auth_state.dart';
@@ -36,15 +39,12 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Algraphy People',
         debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme, // Use the light theme we built
+  darkTheme: AppTheme.darkTheme, // Use the dark theme we built
+  
+  // Choose 'system' to follow phone settings, or 'light'/'dark' to force it
+  themeMode: ThemeMode.system,
         
-        theme: ThemeData.dark().copyWith(
-          scaffoldBackgroundColor: const Color(0xFF080808),
-          primaryColor: const Color(0xFFDC2726),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xFF1C1C1C),
-            elevation: 0,
-          ),
-        ),
         
         onGenerateRoute: AppRouter.generate,
         

@@ -61,25 +61,25 @@ class _TeamAttendanceViewState extends State<TeamAttendanceView> {
   void _showManualMarkDialog() {
     UserModel? selectedUser;
     String markType = 'clock_in';
+    final theme = Theme.of(context);
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF1E1E1E),
-          title: const Text("Manual Attendance Mark", style: TextStyle(color: Colors.white)),
+          backgroundColor: theme.cardColor,
+          title: Text("Manual Attendance Mark", style: TextStyle(color: theme.textTheme.titleLarge?.color)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Employee Picker
               DropdownButtonFormField<UserModel>(
-                dropdownColor: const Color(0xFF2C2C2C),
-                decoration: const InputDecoration(
+                dropdownColor: theme.cardColor,
+                decoration: InputDecoration(
                   labelText: "Select Employee",
-                  labelStyle: TextStyle(color: Colors.grey),
-                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                  labelStyle: const TextStyle(color: Colors.grey),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: theme.dividerColor)),
                 ),
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: theme.textTheme.bodyLarge?.color),
                 items: _employees.map((u) {
                   return DropdownMenuItem(
                     value: u,
@@ -89,24 +89,23 @@ class _TeamAttendanceViewState extends State<TeamAttendanceView> {
                 onChanged: (val) => setDialogState(() => selectedUser = val),
               ),
               const SizedBox(height: 20),
-              // Type Picker
               Row(
                 children: [
                   Expanded(
                     child: RadioListTile<String>(
-                      title: const Text("In", style: TextStyle(color: Colors.white, fontSize: 13)),
+                      title: Text("In", style: TextStyle(color: theme.textTheme.bodyMedium?.color, fontSize: 13)),
                       value: 'clock_in',
                       groupValue: markType,
-                      activeColor: AppColors.primaryRed,
+                      activeColor: theme.primaryColor,
                       onChanged: (val) => setDialogState(() => markType = val!),
                     ),
                   ),
                   Expanded(
                     child: RadioListTile<String>(
-                      title: const Text("Out", style: TextStyle(color: Colors.white, fontSize: 13)),
+                      title: Text("Out", style: TextStyle(color: theme.textTheme.bodyMedium?.color, fontSize: 13)),
                       value: 'clock_out',
                       groupValue: markType,
-                      activeColor: AppColors.primaryRed,
+                      activeColor: theme.primaryColor,
                       onChanged: (val) => setDialogState(() => markType = val!),
                     ),
                   ),
@@ -126,7 +125,7 @@ class _TeamAttendanceViewState extends State<TeamAttendanceView> {
                       Navigator.pop(context);
                       await _markAttendance(selectedUser!.id, markType);
                     },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryRed),
+              style: ElevatedButton.styleFrom(backgroundColor: theme.primaryColor),
               child: const Text("Submit", style: TextStyle(color: Colors.white)),
             ),
           ],
@@ -157,8 +156,11 @@ class _TeamAttendanceViewState extends State<TeamAttendanceView> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primaryRed));
+      return Center(child: CircularProgressIndicator(color: theme.primaryColor));
     }
 
     final mainContent = Scaffold(
@@ -167,19 +169,19 @@ class _TeamAttendanceViewState extends State<TeamAttendanceView> {
           ? null 
           : FloatingActionButton.extended(
               onPressed: _showManualMarkDialog,
-              backgroundColor: AppColors.primaryRed,
+              backgroundColor: theme.primaryColor,
               icon: const Icon(Icons.edit_calendar, color: Colors.white),
               label: const Text("Manual Mark", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
       body: RefreshIndicator(
         onRefresh: _refreshData,
-        color: AppColors.primaryRed,
+        color: theme.primaryColor,
         child: _attendanceLogs.isEmpty
             ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.history, size: 64, color: Colors.grey[800]),
+                    Icon(Icons.history, size: 64, color: theme.disabledColor),
                     const SizedBox(height: 16),
                     const Text("No attendance logs found", style: TextStyle(color: Colors.grey)),
                   ],
@@ -200,9 +202,12 @@ class _TeamAttendanceViewState extends State<TeamAttendanceView> {
                   return Container(
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF161616),
+                      color: theme.cardColor,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                      border: Border.all(color: theme.dividerColor.withOpacity(isDark ? 0.05 : 0.1)),
+                      boxShadow: isDark ? null : [
+                        BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))
+                      ],
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(16),
@@ -210,27 +215,20 @@ class _TeamAttendanceViewState extends State<TeamAttendanceView> {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // 1. Left Color Indicator based on status
-                            Container(
-                              width: 4,
-                              color: _getStatusColor(status),
-                            ),
-                            
-                            // 2. Main content
+                            Container(width: 4, color: _getStatusColor(status)),
                             Expanded(
                               child: Padding(
                                 padding: const EdgeInsets.all(16),
                                 child: Column(
                                   children: [
-                                    // Header: Profile & History
                                     Row(
                                       children: [
                                         CircleAvatar(
                                           radius: 20,
-                                          backgroundColor: AppColors.primaryRed.withValues(alpha: 0.1),
+                                          backgroundColor: theme.primaryColor.withOpacity(0.1),
                                           child: Text(
-                                            name[0].toUpperCase(),
-                                            style: const TextStyle(color: AppColors.primaryRed, fontWeight: FontWeight.bold),
+                                            name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                            style: TextStyle(color: theme.primaryColor, fontWeight: FontWeight.bold),
                                           ),
                                         ),
                                         const SizedBox(width: 12),
@@ -238,17 +236,16 @@ class _TeamAttendanceViewState extends State<TeamAttendanceView> {
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                                              Text(name, style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontWeight: FontWeight.bold, fontSize: 16)),
                                               const SizedBox(height: 2),
                                               Text(_formatDate(date), style: const TextStyle(color: Colors.grey, fontSize: 12)),
                                             ],
                                           ),
                                         ),
-                                        // History Button (Only show if not already in history view)
                                         if (widget.employeeId == null)
                                           Container(
                                             decoration: BoxDecoration(
-                                              color: Colors.blueAccent.withValues(alpha: 0.1),
+                                              color: Colors.blueAccent.withOpacity(0.1),
                                               borderRadius: BorderRadius.circular(8),
                                             ),
                                             child: IconButton(
@@ -270,27 +267,24 @@ class _TeamAttendanceViewState extends State<TeamAttendanceView> {
                                           ),
                                       ],
                                     ),
-                                    const Padding(
-                                      padding: EdgeInsets.symmetric(vertical: 12),
-                                      child: Divider(color: Colors.white10),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      child: Divider(color: theme.dividerColor.withOpacity(0.1)),
                                     ),
-                                    // Footer: Times & Stats
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        // In/Out Times
                                         Row(
                                           children: [
-                                            _timeInfo("IN", clockIn, Colors.green),
+                                            _timeInfo(context, "IN", clockIn, Colors.green),
                                             const SizedBox(width: 20),
-                                            _timeInfo("OUT", clockOut, Colors.orange),
+                                            _timeInfo(context, "OUT", clockOut, Colors.orange),
                                           ],
                                         ),
-                                        // Work Hours
                                         Column(
                                           crossAxisAlignment: CrossAxisAlignment.end,
                                           children: [
-                                            Text("$hours hrs", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18)),
+                                            Text("$hours hrs", style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontWeight: FontWeight.w900, fontSize: 18)),
                                             Text(status, style: TextStyle(color: _getStatusColor(status), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                                           ],
                                         ),
@@ -321,7 +315,8 @@ class _TeamAttendanceViewState extends State<TeamAttendanceView> {
     return mainContent;
   }
 
-  Widget _timeInfo(String label, String time, Color color) {
+  Widget _timeInfo(BuildContext context, String label, String time, Color color) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -335,7 +330,7 @@ class _TeamAttendanceViewState extends State<TeamAttendanceView> {
               decoration: BoxDecoration(shape: BoxShape.circle, color: color),
             ),
             const SizedBox(width: 6),
-            Text(time, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+            Text(time, style: TextStyle(color: theme.textTheme.bodyMedium?.color, fontSize: 14, fontWeight: FontWeight.w600)),
           ],
         ),
       ],

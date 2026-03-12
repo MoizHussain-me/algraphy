@@ -7,6 +7,7 @@ import 'package:algraphy/modules/signature/data/repository/signature_repository.
 import 'package:algraphy/modules/signature/presentation/bloc/signature_bloc.dart';
 import 'package:algraphy/modules/signature/presentation/pages/signature_view_page.dart';
 import 'package:algraphy/modules/tasks/presentation/pages/tasks_page.dart';
+import 'package:algraphy/core/theme/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/foundation.dart' show kIsWeb; // Key for Platform check
@@ -119,7 +120,7 @@ class AppRouter {
                 title: 'Employees',
                 currentRoute: AppRoutes.employees,
                 currentUser: user,
-                body: const Center(
+                body: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -127,7 +128,7 @@ class AppRouter {
                       SizedBox(height: 16),
                       Text(
                         "Access Restricted",
-                        style: TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
+                        style: AppTypography.textTheme.titleLarge,
                       ),
                       SizedBox(height: 8),
                       Text(

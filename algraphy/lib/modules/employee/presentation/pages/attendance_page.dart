@@ -64,7 +64,7 @@ class _AttendancePageState extends State<AttendancePage> with SingleTickerProvid
     if (_isManager) {
       _tabs.add("Approvals");
     } else {
-      _tabs.add("Feeds");
+      // _tabs.add("Feeds");
     }
   }
 
@@ -76,8 +76,6 @@ class _AttendancePageState extends State<AttendancePage> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
-    const Color backgroundDark = Color(0xFF080808);
-    const Color primaryRed = Color(0xFFDC2726);
 
     List<Widget> views = [];
 
@@ -102,25 +100,23 @@ class _AttendancePageState extends State<AttendancePage> with SingleTickerProvid
       if (_isManager) {
         views.add(const ApprovalsView());
       } else {
-        views.add(const ComingSoonPage(title: "Feeds"));
+        //views.add(const ComingSoonPage(title: "Feeds"));
       }
     }
 
     return Scaffold(
-      backgroundColor: backgroundDark,
-      floatingActionButton: _buildFAB(primaryRed),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      floatingActionButton: _buildFAB(Theme.of(context).primaryColor),
       body: Column(
         children: [
           Container(
-            color: backgroundDark,
+            color: Theme.of(context).scaffoldBackgroundColor,
             width: double.infinity,
             child: TabBar(
               controller: _tabController,
               isScrollable: true, 
-              indicatorColor: primaryRed,
+              indicatorColor: Theme.of(context).primaryColor,
               indicatorWeight: 3,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.grey,
               labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
               unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal, fontSize: 15),
               dividerColor: Colors.transparent, 
@@ -141,7 +137,7 @@ class _AttendancePageState extends State<AttendancePage> with SingleTickerProvid
     );
   }
 
-  Widget? _buildFAB(Color primaryRed) {
+  Widget? _buildFAB(Color primaryColor) {
     if (_isClient) return null;
     // Index 2 is Leaves
     if (_tabController.index == 2) {
@@ -158,7 +154,7 @@ class _AttendancePageState extends State<AttendancePage> with SingleTickerProvid
             });
           }
         },
-        backgroundColor: primaryRed,
+        backgroundColor: primaryColor,
         icon: const Icon(Icons.add, color: Colors.white),
         label: const Text("Apply Leave", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       );

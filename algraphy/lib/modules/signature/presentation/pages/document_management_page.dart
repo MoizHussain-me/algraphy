@@ -37,33 +37,23 @@ class _DocumentManagementPageState extends State<DocumentManagementPage> {
 
       String url = "${AppConstants.apiBaseUrl}?action=get_all_signature_requests";
 
-      // If not admin, we MUST filter by current employee's ID
       if (!widget.isAdmin) {
         if (userJson == null) {
-          debugPrint("Fetch Error: No user data found in storage.");
-          setState(() => isLoading = false);
+          if (mounted) setState(() => isLoading = false);
           return;
         }
 
         final Map<String, dynamic> userMap = jsonDecode(userJson);
         final user = UserModel.fromMap(userMap);
-        
-        // Use employee_id (PK) first, fallback to user_id if needed (though risky)
         final String? filterId = user.employeeId ?? user.id;
 
         if (filterId != null && filterId.isNotEmpty) {
           url += "&employee_id=$filterId";
-          debugPrint("FETCHING DOCS FOR EMPLOYEE: $filterId");
         } else {
-          debugPrint("Fetch Error: User has no valid employee ID.");
-          setState(() => isLoading = false);
+          if (mounted) setState(() => isLoading = false);
           return;
         }
-      } else {
-        debugPrint("FETCHING ALL DOCS (ADMIN VIEW)");
       }
-
-      debugPrint("CALLING API: $url");
 
       final response = await Dio().get(
         url,
@@ -78,8 +68,6 @@ class _DocumentManagementPageState extends State<DocumentManagementPage> {
                 .toList();
           });
         }
-      } else {
-        debugPrint("API Fail: ${response.data['message']}");
       }
     } catch (e) {
       debugPrint("Fetch Error: $e");
@@ -88,15 +76,11 @@ class _DocumentManagementPageState extends State<DocumentManagementPage> {
     }
   }
 
-  // Logic to show the creation sheet (For Admins)
   void _openCreateSheet() async {
     try {
-      // 1. Fetch employees first (required for the dropdown in the sheet)
       final employees = await GetIt.I<AdminRepository>().getAllEmployees();
-      
       if (!mounted) return;
 
-      // 2. Filter for unique IDs to prevent Dropdown assertion errors
       final Set<String> seenIds = {};
       final List<UserModel> uniqueEmployees = employees.where((emp) {
         if (emp.id.isEmpty) return false;
@@ -105,12 +89,11 @@ class _DocumentManagementPageState extends State<DocumentManagementPage> {
 
       if (uniqueEmployees.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("No employees found to request signatures from.")),
+          const SnackBar(content: Text("No employees found.")),
         );
         return;
       }
 
-      // 3. Show the upload form
       final result = await showModalBottomSheet(
         context: context,
         isScrollControlled: true,
@@ -121,9 +104,7 @@ class _DocumentManagementPageState extends State<DocumentManagementPage> {
         ),
       );
 
-      if (result == true) {
-        _fetchDocuments(); // Refresh list if a new doc was created
-      }
+      if (result == true) _fetchDocuments();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -133,7 +114,6 @@ class _DocumentManagementPageState extends State<DocumentManagementPage> {
     }
   }
 
-  // Navigation to preview
   void _viewPDF(String relativePath, String title) {
     Navigator.push(
       context,
@@ -145,21 +125,25 @@ class _DocumentManagementPageState extends State<DocumentManagementPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) return const Center(child: CircularProgressIndicator(color: Color(0xFFDC2726)));
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    if (isLoading) {
+      return Center(child: CircularProgressIndicator(color: theme.primaryColor));
+    }
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      // Only show the Plus button if the user is an Admin
       floatingActionButton: widget.isAdmin 
         ? FloatingActionButton(
-            backgroundColor: const Color(0xFFDC2726),
+            backgroundColor: theme.primaryColor,
             child: const Icon(Icons.add, color: Colors.white),
             onPressed: _openCreateSheet,
           )
         : null,
       body: RefreshIndicator(
         onRefresh: _fetchDocuments,
-        color: const Color(0xFFDC2726),
+        color: theme.primaryColor,
         child: docs.isEmpty 
           ? const Center(child: Text("No documents found", style: TextStyle(color: Colors.grey)))
           : ListView.builder(
@@ -169,15 +153,18 @@ class _DocumentManagementPageState extends State<DocumentManagementPage> {
                 final doc = docs[index];
                 final bool isSigned = doc.status == 'Signed';
                 final bool isExpired = doc.expiryDate != null && 
-                                      DateTime.parse(doc.expiryDate!).isBefore(DateTime.now().subtract(const Duration(days: 0))) &&
-                                      !isSigned;
+                    DateTime.parse(doc.expiryDate!).isBefore(DateTime.now()) &&
+                    !isSigned;
 
                 return Card(
-                  color: const Color(0xFF1C1C1C),
+                  color: theme.cardColor,
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  elevation: isDark ? 0 : 2,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    side: isExpired ? const BorderSide(color: Colors.red, width: 1) : BorderSide.none,
+                    side: isExpired 
+                        ? const BorderSide(color: Colors.red, width: 1) 
+                        : BorderSide(color: theme.dividerColor.withOpacity(isDark ? 0.05 : 0.1)),
                   ),
                   child: ListTile(
                     leading: Icon(
@@ -187,26 +174,36 @@ class _DocumentManagementPageState extends State<DocumentManagementPage> {
                     ),
                     title: Text(
                       doc.documentTitle, 
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
+                      style: TextStyle(
+                        color: theme.textTheme.bodyLarge?.color, 
+                        fontWeight: FontWeight.bold
+                      )
                     ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        const SizedBox(height: 2),
                         Text(
                           "Status: ${isExpired ? 'Expired' : doc.status}", 
-                          style: TextStyle(color: isSigned ? Colors.green : (isExpired ? Colors.red : Colors.orange), fontSize: 12)
+                          style: TextStyle(
+                            color: isSigned ? Colors.green : (isExpired ? Colors.red : Colors.orange), 
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600
+                          )
                         ),
                         if (doc.expiryDate != null)
                           Text(
                             "Expires: ${DateFormat('MMM dd, yyyy').format(DateTime.parse(doc.expiryDate!))}",
-                            style: TextStyle(color: isExpired ? Colors.red.withOpacity(0.7) : Colors.grey, fontSize: 11),
+                            style: TextStyle(
+                              color: isExpired ? Colors.red.withOpacity(0.7) : Colors.grey, 
+                              fontSize: 11
+                            ),
                           ),
                       ],
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // VIEW BUTTON
                         IconButton(
                           icon: const Icon(Icons.visibility, color: Colors.blue),
                           onPressed: () => _viewPDF(
@@ -214,18 +211,17 @@ class _DocumentManagementPageState extends State<DocumentManagementPage> {
                             isSigned ? "Signed PDF" : "Original PDF"
                           ),
                         ),
-                        
-                        // SIGN BUTTON (Only for employees on pending/non-expired docs)
                         if (doc.status == 'Pending' && !widget.isAdmin && !isExpired)
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFDC2726),
+                              backgroundColor: theme.primaryColor,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
                             ),
                             onPressed: () => Navigator.pushNamed(
                               context, '/signature', arguments: doc.token
                             ).then((_) => _fetchDocuments()),
-                            child: const Text("Sign", style: TextStyle(color: Colors.white)),
+                            child: const Text("Sign", style: TextStyle(color: Colors.white, fontSize: 12)),
                           ),
                       ],
                     ),

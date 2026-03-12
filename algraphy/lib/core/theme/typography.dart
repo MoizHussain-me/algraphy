@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'colors.dart';
-
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTypography {
-// NOTE: Ensure you add the ITC Avant Garde font to pubspec.yaml and assets.
-static const String fontFamily = 'ItcAvantGardeStdMd';
+  // Define the base style
+  static final TextStyle _baseStyle = GoogleFonts.inter();
+  static String? get fontFamily => GoogleFonts.inter().fontFamily;
 
-
-static TextTheme darkTextTheme = const TextTheme(
-displayLarge: TextStyle(fontFamily: fontFamily, color: AppColors.white),
-headlineMedium: TextStyle(fontFamily: fontFamily, color: AppColors.white),
-bodyMedium: TextStyle(fontFamily: fontFamily, color: AppColors.textGrey),
-bodySmall: TextStyle(fontFamily: fontFamily, color: AppColors.textGrey),
-);
+  static TextTheme get textTheme => GoogleFonts.interTextTheme().copyWith(
+    displayLarge: _baseStyle.copyWith(fontSize: 32, fontWeight: FontWeight.bold),
+    titleLarge: _baseStyle.copyWith(fontSize: 20, fontWeight: FontWeight.w600),
+    bodyLarge: _baseStyle.copyWith(fontSize: 16, fontWeight: FontWeight.normal),
+    bodyMedium: _baseStyle.copyWith(fontSize: 14, fontWeight: FontWeight.normal),
+    labelSmall: _baseStyle.copyWith(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey),
+  );
 }

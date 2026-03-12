@@ -29,20 +29,17 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> with SingleTi
 
   @override
   Widget build(BuildContext context) {
-    const Color backgroundDark = Color(0xFF080808);
-    const Color primaryRed = Color(0xFFDC2726);
-
     return Scaffold(
-      backgroundColor: backgroundDark,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: [
           Container(
-            color: backgroundDark,
+            color: Theme.of(context).scaffoldBackgroundColor,
             width: double.infinity,
             child: TabBar(
               controller: _tabController,
               isScrollable: true,
-              indicatorColor: primaryRed,
+              indicatorColor: Theme.of(context).primaryColor,
               indicatorWeight: 3,
               labelColor: Colors.white,
               unselectedLabelColor: Colors.grey,

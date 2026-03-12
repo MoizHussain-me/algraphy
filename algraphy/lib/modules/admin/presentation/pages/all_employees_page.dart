@@ -106,9 +106,9 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
       title: 'Delete Account',
       message:
           'This will permanently deactivate ${user.fullName}\'s account. '
-          'They will no longer be able to log in. This action cannot be easily undone.',
+          'They will no longer be able to log in. This action cannot be undone.',
       confirmLabel: 'Delete',
-      confirmColor: const Color(0xFFDC2726),
+      confirmColor: Theme.of(context).primaryColor,
     );
     if (!confirmed) return;
 
@@ -117,7 +117,7 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('${user.fullName}\'s account has been deleted.'),
-          backgroundColor: const Color(0xFFDC2726),
+          backgroundColor: Theme.of(context).primaryColor,
         ));
         _fetchEmployees();
       }
@@ -137,17 +137,18 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
     required String confirmLabel,
     required Color confirmColor,
   }) async {
+    final theme = Theme.of(context);
     return await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1C1C1C),
+        backgroundColor: theme.cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: Text(message, style: const TextStyle(color: Colors.grey)),
+        title: Text(title, style: TextStyle(color: theme.textTheme.titleLarge?.color, fontWeight: FontWeight.bold)),
+        content: Text(message, style: TextStyle(color: theme.hintColor)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child: Text('Cancel', style: TextStyle(color: theme.hintColor)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -155,7 +156,7 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(confirmLabel, style: const TextStyle(color: Colors.white)),
+            child: const Text('Confirm', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -166,8 +167,11 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFFDC2726)));
+      return Center(child: CircularProgressIndicator(color: theme.primaryColor));
     }
     if (_error != null) {
       return Center(
@@ -180,7 +184,7 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
             onPressed: _fetchEmployees,
             icon: const Icon(Icons.refresh),
             label: const Text('Retry'),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDC2726)),
+            style: ElevatedButton.styleFrom(backgroundColor: theme.primaryColor),
           ),
         ]),
       );
@@ -198,14 +202,14 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
               Expanded(
                 child: TextField(
                   controller: _searchController,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: theme.textTheme.bodyLarge?.color),
                   decoration: InputDecoration(
                     hintText: 'Search by name, role, department…',
-                    hintStyle: TextStyle(color: Colors.grey[600]),
-                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                    hintStyle: TextStyle(color: theme.hintColor),
+                    prefixIcon: Icon(Icons.search, color: theme.hintColor),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear, color: Colors.grey),
+                            icon: Icon(Icons.clear, color: theme.hintColor),
                             onPressed: () {
                               _searchController.clear();
                               _applyFilter();
@@ -213,17 +217,21 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
                           )
                         : null,
                     filled: true,
-                    fillColor: const Color(0xFF1C1C1C),
+                    fillColor: theme.cardColor,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
+                      borderSide: isDark ? BorderSide.none : BorderSide(color: theme.dividerColor.withOpacity(0.1)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: isDark ? BorderSide.none : BorderSide(color: theme.dividerColor.withOpacity(0.1)),
                     ),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               IconButton(
-                icon: const Icon(Icons.refresh, color: Colors.grey),
+                icon: Icon(Icons.refresh, color: theme.hintColor),
                 tooltip: 'Refresh',
                 onPressed: _fetchEmployees,
               ),
@@ -238,7 +246,7 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
             children: [
               Text(
                 '${_filtered.length} employee${_filtered.length == 1 ? '' : 's'}',
-                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                style: TextStyle(color: theme.hintColor, fontSize: 12),
               ),
             ],
           ),
@@ -249,9 +257,9 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
           child: _filtered.isEmpty
               ? Center(
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.people_outline, size: 64, color: Colors.grey[800]),
+                    Icon(Icons.people_outline, size: 64, color: theme.disabledColor),
                     const SizedBox(height: 12),
-                    const Text('No employees found', style: TextStyle(color: Colors.grey)),
+                    Text('No employees found', style: TextStyle(color: theme.hintColor)),
                   ]),
                 )
               : ListView.builder(
@@ -265,16 +273,19 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
   }
 
   Widget _buildEmployeeCard(UserModel user, bool isAdmin) {
+    final theme = Theme.of(context);
     final bool isActive = user.isActive;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Card(
-      color: const Color(0xFF1C1C1C),
+      color: theme.cardColor,
       margin: const EdgeInsets.only(bottom: 12),
+      elevation: isDark ? 0 : 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
         side: BorderSide(
           color: isActive
-              ? Colors.white.withValues(alpha: 0.08)
+              ? theme.dividerColor.withOpacity(isDark ? 0.08 : 0.1)
               : Colors.orange.withValues(alpha: 0.3),
         ),
       ),
@@ -301,15 +312,15 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
                 children: [
                   CircleAvatar(
                     radius: 26,
-                    backgroundColor: const Color(0xFFDC2726).withValues(alpha: 0.15),
+                    backgroundColor: theme.primaryColor.withValues(alpha: 0.15),
                     backgroundImage: _getProfileImage(user.profilePicture),
                     child: user.profilePicture == null || user.profilePicture!.isEmpty
                         ? Text(
                             user.firstName?.isNotEmpty == true
                                 ? user.firstName![0].toUpperCase()
                                 : 'U',
-                            style: const TextStyle(
-                              color: Color(0xFFDC2726),
+                            style: TextStyle(
+                              color: theme.primaryColor,
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
                             ),
@@ -326,7 +337,7 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
                         decoration: BoxDecoration(
                           color: Colors.orange,
                           shape: BoxShape.circle,
-                          border: Border.all(color: const Color(0xFF1C1C1C), width: 2),
+                          border: Border.all(color: theme.cardColor, width: 2),
                         ),
                       ),
                     ),
@@ -345,8 +356,8 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
                         Expanded(
                           child: Text(
                             user.fullName.trim().isEmpty ? 'Unknown' : user.fullName,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+color: isDark ? Colors.white : theme.textTheme.titleLarge?.color,
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
                             ),
@@ -371,19 +382,19 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
                     const SizedBox(height: 4),
                     Text(
                       [user.designation, user.department].where((s) => s != null && s.isNotEmpty).join(' • '),
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                      style: TextStyle(color: theme.hintColor, fontSize: 12),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(
                       user.email,
-                      style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                      style: TextStyle(color: theme.hintColor.withOpacity(0.7), fontSize: 11),
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (user.employeeCode != null && user.employeeCode!.isNotEmpty)
                       Text(
                         user.employeeCode!,
-                        style: TextStyle(color: Colors.grey[700], fontSize: 10),
+                        style: TextStyle(color: theme.hintColor.withOpacity(0.5), fontSize: 10),
                       ),
                   ],
                 ),
@@ -392,8 +403,8 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
               // --- Admin Action Menu ---
               if (isAdmin)
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: Colors.grey),
-                  color: const Color(0xFF2A2A2A),
+                  icon: Icon(Icons.more_vert, color: theme.hintColor),
+                  color: theme.cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   onSelected: (value) {
                     switch (value) {
@@ -404,9 +415,9 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
                             builder: (_) => Scaffold(
                               appBar: AppBar(
                                 title: const Text('Edit Employee'),
-                                backgroundColor: const Color(0xFF080808),
+                                backgroundColor: theme.scaffoldBackgroundColor,
                               ),
-                              backgroundColor: const Color(0xFF080808),
+                              backgroundColor: theme.scaffoldBackgroundColor,
                               body: RegistrationStepperView(userToEdit: user),
                             ),
                           ),
@@ -422,12 +433,12 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
                   },
                   itemBuilder: (_) => [
                     if (kIsWeb)
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'edit',
                         child: Row(children: [
-                          Icon(Icons.edit_outlined, color: Color(0xFFDC2726), size: 18),
-                          SizedBox(width: 10),
-                          Text('Edit Profile', style: TextStyle(color: Colors.white)),
+                          Icon(Icons.edit_outlined, color: theme.primaryColor, size: 18),
+                          const SizedBox(width: 10),
+                          Text('Edit Profile', style: TextStyle(color: theme.textTheme.bodyLarge?.color)),
                         ]),
                       ),
                     PopupMenuItem(
@@ -446,18 +457,18 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
                       ]),
                     ),
                     const PopupMenuDivider(),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'delete',
                       child: Row(children: [
-                        Icon(Icons.delete_outline, color: Color(0xFFDC2726), size: 18),
-                        SizedBox(width: 10),
-                        Text('Delete Account', style: TextStyle(color: Color(0xFFDC2726))),
+                        Icon(Icons.delete_outline, color: theme.primaryColor, size: 18),
+                        const SizedBox(width: 10),
+                        Text('Delete Account', style: TextStyle(color: theme.primaryColor)),
                       ]),
                     ),
                   ],
                 )
               else
-                const Icon(Icons.chevron_right, color: Colors.grey),
+                Icon(Icons.chevron_right, color: theme.hintColor),
             ],
           ),
         ),

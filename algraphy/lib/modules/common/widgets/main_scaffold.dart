@@ -32,7 +32,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     if (isWideScreen) {
       // Persistent side menu for wide screens
       return Scaffold(
-        backgroundColor: AppColors.backgroundDark,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Row(
           children: [
             SizedBox(
@@ -47,7 +47,7 @@ class _MainScaffoldState extends State<MainScaffold> {
               child: Column(
                 children: [
                   AppBar(
-                    backgroundColor: AppColors.backgroundDark,
+                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                     title: Text(widget.title.isEmpty ? 'Algraphy' : widget.title),
                   ),
                   Expanded(
@@ -81,7 +81,7 @@ class _MainScaffoldState extends State<MainScaffold> {
             activeRoute: currentRoute,
              currentUser: widget.currentUser,
           ),
-          backgroundColor: AppColors.backgroundDark,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: AppBar(
             leading: IconButton(
               icon: const Icon(Icons.menu),

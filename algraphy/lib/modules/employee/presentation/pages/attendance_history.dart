@@ -2,6 +2,7 @@ import 'package:algraphy/modules/employee/data/employee_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
+
 class AttendanceHistoryPage extends StatefulWidget {
   const AttendanceHistoryPage({super.key});
 
@@ -10,7 +11,7 @@ class AttendanceHistoryPage extends StatefulWidget {
 }
 
 class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
- bool _isLoading = true;
+  bool _isLoading = true;
   List<Map<String, dynamic>> _history = [];
 
   @override
@@ -36,9 +37,9 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
     }
   }
 
-  // --- SAFE FORMATTERS (Prevents Null Crash) ---
+  // --- SAFE FORMATTERS ---
   String _formatTime(dynamic timeStr) {
-    if (timeStr == null || timeStr == '') return '--:--'; // Handle NULL safely
+    if (timeStr == null || timeStr == '') return '--:--';
     try {
       final dt = DateTime.parse(timeStr.toString());
       return DateFormat('hh:mm a').format(dt);
@@ -59,14 +60,16 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
 
   String _formatHours(dynamic hours) {
     if (hours == null) return '-';
-    // Ensure we treat it as a number (API might return string "8.5" or int 8 or double 8.5)
     final h = double.tryParse(hours.toString()) ?? 0.0;
     return "${h.toStringAsFixed(1)} hrs";
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    if (_isLoading) return Center(child: CircularProgressIndicator(color: theme.primaryColor));
 
     if (_history.isEmpty) {
       return const Center(child: Text("No attendance history found", style: TextStyle(color: Colors.grey)));
@@ -76,6 +79,7 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: _history.length,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemBuilder: (context, index) {
         final item = _history[index];
         final isCompleted = item['clock_out'] != null;
@@ -84,9 +88,16 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF1C1C1C),
+            color: theme.cardColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white10),
+            border: Border.all(color: theme.dividerColor.withOpacity(isDark ? 0.1 : 0.05)),
+            boxShadow: isDark ? null : [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+            ],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -97,13 +108,17 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
                 children: [
                   Text(
                     _formatDate(item['date']),
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                    style: TextStyle(
+                      color: theme.textTheme.bodyLarge?.color, 
+                      fontWeight: FontWeight.bold, 
+                      fontSize: 16
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: isCompleted ? Colors.green.withOpacity(0.2) : Colors.orange.withOpacity(0.2),
+                      color: isCompleted ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -126,7 +141,10 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
                     children: [
                       const Icon(Icons.login, color: Colors.green, size: 14),
                       const SizedBox(width: 4),
-                      Text(_formatTime(item['clock_in']), style: const TextStyle(color: Colors.grey, fontSize: 14)),
+                      Text(
+                        _formatTime(item['clock_in']), 
+                        style: TextStyle(color: theme.textTheme.bodySmall?.color?.withOpacity(0.6), fontSize: 13)
+                      ),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -134,22 +152,30 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
                     children: [
                       const Icon(Icons.logout, color: Colors.red, size: 14),
                       const SizedBox(width: 4),
-                      Text(_formatTime(item['clock_out']), style: const TextStyle(color: Colors.grey, fontSize: 14)),
+                      Text(
+                        _formatTime(item['clock_out']), 
+                        style: TextStyle(color: theme.textTheme.bodySmall?.color?.withOpacity(0.6), fontSize: 13)
+                      ),
                     ],
                   ),
                 ],
               ),
 
-              // Total Hours
+              // Total Hours Badge
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.grey[900],
+                  color: isDark ? Colors.white.withOpacity(0.05) : theme.scaffoldBackgroundColor,
                   borderRadius: BorderRadius.circular(8),
+                  border: isDark ? null : Border.all(color: theme.dividerColor.withOpacity(0.1)),
                 ),
                 child: Text(
                   _formatHours(item['work_hours']),
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: theme.textTheme.bodyLarge?.color, 
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13
+                  ),
                 ),
               ),
             ],

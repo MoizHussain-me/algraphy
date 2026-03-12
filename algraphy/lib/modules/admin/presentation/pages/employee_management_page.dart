@@ -58,21 +58,16 @@ class _EmployeeManagementPageState extends State<EmployeeManagementPage> with Si
 
   @override
   Widget build(BuildContext context) {
-    const Color backgroundDark = Color(0xFF080808);
-    const Color primaryRed = Color(0xFFDC2726);
-
     return Column(
       children: [
         Container(
-          color: backgroundDark,
+          color: Theme.of(context).scaffoldBackgroundColor,
           width: double.infinity,
           child: TabBar(
             controller: _tabController,
             isScrollable: true, 
-            indicatorColor: primaryRed,
+            indicatorColor: Theme.of(context).primaryColor,
             indicatorWeight: 3,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.grey,
             labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
             unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal, fontSize: 15),
             dividerColor: Colors.transparent, 

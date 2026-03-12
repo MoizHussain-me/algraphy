@@ -21,9 +21,7 @@ class _ApprovalsViewState extends State<ApprovalsView> {
 
   Future<void> _fetchRequests() async {
     try {
-      // REAL API CALL
       final data = await GetIt.I<EmployeeRepository>().getTeamLeaveRequests();
-      
       if (mounted) {
         setState(() {
           _requests = data;
@@ -37,12 +35,9 @@ class _ApprovalsViewState extends State<ApprovalsView> {
 
   Future<void> _processRequest(String id, String status) async {
     setState(() => _isLoading = true);
-    
     try {
       await GetIt.I<EmployeeRepository>().processLeaveRequest(id, status, "Manager Action");
-      
       if (mounted) {
-        // Optimistic remove
         setState(() {
           _requests.removeWhere((r) => r['id'].toString() == id);
           _isLoading = false;
@@ -62,8 +57,11 @@ class _ApprovalsViewState extends State<ApprovalsView> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFFDC2726)));
+      return Center(child: CircularProgressIndicator(color: theme.primaryColor));
     }
 
     if (_requests.isEmpty) {
@@ -71,9 +69,9 @@ class _ApprovalsViewState extends State<ApprovalsView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.done_all, size: 60, color: Colors.grey[800]),
+            Icon(Icons.done_all, size: 60, color: theme.disabledColor),
             const SizedBox(height: 16),
-            const Text("No pending approvals", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+            Text("No pending approvals", textAlign: TextAlign.center, style: TextStyle(color: theme.hintColor)),
           ],
         ),
       );
@@ -93,9 +91,13 @@ class _ApprovalsViewState extends State<ApprovalsView> {
         final end = req['end_date'];
 
         return Card(
-          color: const Color(0xFF1E1E1E),
+          color: theme.cardColor,
           margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          elevation: isDark ? 0 : 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: theme.dividerColor.withOpacity(0.05)),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -104,15 +106,25 @@ class _ApprovalsViewState extends State<ApprovalsView> {
                 Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: Colors.grey[800],
-                      child: Text(name.isNotEmpty ? name[0] : '?', style: const TextStyle(color: Colors.white)),
+                      backgroundColor: isDark ? Colors.grey[800] : Colors.grey[300],
+                      child: Text(
+                        name.isNotEmpty ? name[0] : '?', 
+                        style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                          Text(
+                            name, 
+                            style: TextStyle(
+                              color: theme.textTheme.bodyLarge?.color, 
+                              fontWeight: FontWeight.bold, 
+                              fontSize: 16
+                            ),
+                          ),
                           Text("$days Days • $type", style: const TextStyle(color: Colors.grey, fontSize: 12)),
                         ],
                       ),
@@ -122,19 +134,34 @@ class _ApprovalsViewState extends State<ApprovalsView> {
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.black26 : theme.scaffoldBackgroundColor.withOpacity(0.5), 
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.date_range, color: Colors.white54, size: 14),
+                          Icon(Icons.date_range, color: isDark ? Colors.white54 : Colors.black45, size: 14),
                           const SizedBox(width: 6),
-                          Text("$start  ➜  $end", style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
+                          Text(
+                            "$start  ➜  $end", 
+                            style: TextStyle(
+                              color: isDark ? Colors.white70 : Colors.black87, 
+                              fontWeight: FontWeight.bold
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text("Reason: $reason", style: const TextStyle(color: Colors.white54, fontStyle: FontStyle.italic)),
+                      Text(
+                        "Reason: $reason", 
+                        style: TextStyle(
+                          color: isDark ? Colors.white54 : Colors.black54, 
+                          fontStyle: FontStyle.italic
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -144,7 +171,10 @@ class _ApprovalsViewState extends State<ApprovalsView> {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () => _processRequest(id, "Rejected"),
-                        style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red)),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red, 
+                          side: const BorderSide(color: Colors.red),
+                        ),
                         child: const Text("Reject"),
                       ),
                     ),
@@ -152,7 +182,10 @@ class _ApprovalsViewState extends State<ApprovalsView> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () => _processRequest(id, "Approved"),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green, 
+                          foregroundColor: Colors.white,
+                        ),
                         child: const Text("Approve"),
                       ),
                     ),

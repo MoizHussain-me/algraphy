@@ -57,6 +57,9 @@ class _ApplyLeaveViewState extends State<ApplyLeaveView> {
   }
 
   Future<void> _pickDate(bool isStart) async {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -64,13 +67,15 @@ class _ApplyLeaveViewState extends State<ApplyLeaveView> {
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) {
         return Theme(
-          data: ThemeData.dark().copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Color(0xFFDC2726),
-              onPrimary: Colors.white,
-              surface: Color(0xFF1C1C1C),
-              onSurface: Colors.white,
-            ),
+          data: theme.copyWith(
+            colorScheme: isDark 
+              ? theme.colorScheme.copyWith(
+                  primary: const Color(0xFFDC2726),
+                  surface: const Color(0xFF1C1C1C),
+                )
+              : theme.colorScheme.copyWith(
+                  primary: const Color(0xFFDC2726),
+                ),
           ),
           child: child!,
         );
@@ -95,10 +100,11 @@ class _ApplyLeaveViewState extends State<ApplyLeaveView> {
     if (_employees.isEmpty && !_isLoadingEmployees) {
       _loadEmployees();
     }
+    final theme = Theme.of(context);
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1C1C1C),
+      backgroundColor: theme.cardColor,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) {
@@ -169,15 +175,18 @@ class _ApplyLeaveViewState extends State<ApplyLeaveView> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text("Apply for Leave"),
-        backgroundColor: const Color(0xFF1C1C1C),
+        backgroundColor: theme.appBarTheme.backgroundColor,
         elevation: 0,
       ),
       body: _isLoadingEmployees 
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFFDC2726)))
+          ? Center(child: CircularProgressIndicator(color: theme.primaryColor))
           : SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Form(
@@ -185,7 +194,7 @@ class _ApplyLeaveViewState extends State<ApplyLeaveView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSectionTitle("Recipients"),
+              _buildSectionTitle("Recipients", theme),
               const SizedBox(height: 16),
 
               _buildPickerField(
@@ -193,6 +202,7 @@ class _ApplyLeaveViewState extends State<ApplyLeaveView> {
                 icon: Icons.person,
                 value: _selectedTo == null ? "Select Recipient" : "${_selectedTo!['first_name']} ${_selectedTo!['last_name']}",
                 onTap: () => _showEmployeePicker(true),
+                theme: theme,
               ),
               const SizedBox(height: 16),
 
@@ -201,17 +211,18 @@ class _ApplyLeaveViewState extends State<ApplyLeaveView> {
                 icon: Icons.people,
                 value: _selectedCC.isEmpty ? "Select Employees (Optional)" : "${_selectedCC.length} selected",
                 onTap: () => _showEmployeePicker(false),
+                theme: theme,
               ),
               const SizedBox(height: 24),
 
-              _buildSectionTitle("Leave Details"),
+              _buildSectionTitle("Leave Details", theme),
               const SizedBox(height: 16),
               
               DropdownButtonFormField<String>(
                 value: _leaveType,
-                dropdownColor: const Color(0xFF2C2C2C),
-                style: const TextStyle(color: Colors.white),
-                decoration: _inputDecoration("Leave Type", Icons.category),
+                dropdownColor: isDark ? const Color(0xFF2C2C2C) : theme.cardColor,
+                style: TextStyle(color: theme.textTheme.bodyLarge?.color),
+                decoration: _inputDecoration("Leave Type", Icons.category, theme),
                 items: _leaveTypes.map((type) => DropdownMenuItem(
                   value: type,
                   child: Text(type),
@@ -228,6 +239,7 @@ class _ApplyLeaveViewState extends State<ApplyLeaveView> {
                       icon: Icons.calendar_today,
                       value: _startDate == null ? "Select" : DateFormat('MMM dd, yyyy').format(_startDate!),
                       onTap: () => _pickDate(true),
+                      theme: theme,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -237,20 +249,21 @@ class _ApplyLeaveViewState extends State<ApplyLeaveView> {
                       icon: Icons.event,
                       value: _endDate == null ? "Select" : DateFormat('MMM dd, yyyy').format(_endDate!),
                       onTap: () => _pickDate(false),
+                      theme: theme,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 24),
 
-              _buildSectionTitle("Reason"),
+              _buildSectionTitle("Reason", theme),
               const SizedBox(height: 16),
               
               TextFormField(
                 controller: _reasonCtrl,
                 maxLines: 4,
-                style: const TextStyle(color: Colors.white),
-                decoration: _inputDecoration("Description", Icons.description).copyWith(
+                style: TextStyle(color: theme.textTheme.bodyLarge?.color),
+                decoration: _inputDecoration("Description", Icons.description, theme).copyWith(
                   alignLabelWithHint: true,
                 ),
                 validator: (val) => val!.isEmpty ? "Reason is required" : null,
@@ -278,32 +291,33 @@ class _ApplyLeaveViewState extends State<ApplyLeaveView> {
     );
   }
 
-  Widget _buildPickerField({required String label, required IconData icon, required String value, required VoidCallback onTap}) {
+  Widget _buildPickerField({required String label, required IconData icon, required String value, required VoidCallback onTap, required ThemeData theme}) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: InputDecorator(
-        decoration: _inputDecoration(label, icon),
-        child: Text(value, style: const TextStyle(color: Colors.white)),
+        decoration: _inputDecoration(label, icon, theme),
+        child: Text(value, style: TextStyle(color: theme.textTheme.bodyLarge?.color)),
       ),
     );
   }
 
-  InputDecoration _inputDecoration(String label, IconData icon) {
+  InputDecoration _inputDecoration(String label, IconData icon, ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
     return InputDecoration(
       labelText: label,
       labelStyle: const TextStyle(color: Colors.grey),
       prefixIcon: Icon(icon, color: Colors.grey),
       filled: true,
-      fillColor: const Color(0xFF2C2C2C),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+      fillColor: isDark ? const Color(0xFF2C2C2C) : theme.cardColor,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: isDark ? BorderSide.none : BorderSide(color: theme.dividerColor)),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: isDark ? BorderSide.none : BorderSide(color: theme.dividerColor)),
       focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFDC2726))),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(title, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold));
+  Widget _buildSectionTitle(String title, ThemeData theme) {
+    return Text(title, style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontSize: 18, fontWeight: FontWeight.bold));
   }
 }
 
@@ -359,6 +373,8 @@ class _EmployeePickerModalState extends State<_EmployeePickerModal> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final baseUrl = AppConstants.apiBaseUrl.replaceAll('routes/api.php', '');
     
     return Padding(
@@ -366,26 +382,26 @@ class _EmployeePickerModalState extends State<_EmployeePickerModal> {
       child: Container(
         height: MediaQuery.of(context).size.height * 0.8,
         padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: Color(0xFF1C1C1C),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           children: [
             Container(
               width: 40, height: 4,
               margin: const EdgeInsets.only(bottom: 20),
-              decoration: BoxDecoration(color: Colors.grey[700], borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(color: Colors.grey[isDark ? 700 : 300], borderRadius: BorderRadius.circular(2)),
             ),
             Text(
               widget.isTo ? "Select Recipient (To)" : "Select CC Employees",
-              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _searchCtrl,
               autofocus: true,
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: theme.textTheme.bodyLarge?.color),
               decoration: InputDecoration(
                 hintText: "Search by name...",
                 hintStyle: const TextStyle(color: Colors.grey),
@@ -394,8 +410,8 @@ class _EmployeePickerModalState extends State<_EmployeePickerModal> {
                   ? IconButton(icon: const Icon(Icons.clear, color: Colors.grey), onPressed: () { _searchCtrl.clear(); _filter(""); })
                   : null,
                 filled: true,
-                fillColor: const Color(0xFF2C2C2C),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                fillColor: isDark ? const Color(0xFF2C2C2C) : theme.scaffoldBackgroundColor,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: isDark ? BorderSide.none : BorderSide(color: theme.dividerColor)),
               ),
               onChanged: _filter,
             ),
@@ -426,7 +442,7 @@ class _EmployeePickerModalState extends State<_EmployeePickerModal> {
                                 ) 
                               : null,
                           ),
-                          title: Text("${emp['first_name'] ?? ''} ${emp['last_name'] ?? ''}", style: const TextStyle(color: Colors.white)),
+                          title: Text("${emp['first_name'] ?? ''} ${emp['last_name'] ?? ''}", style: TextStyle(color: theme.textTheme.bodyLarge?.color)),
                           trailing: isSelected ? const Icon(Icons.check_circle, color: Color(0xFFDC2726)) : null,
                           onTap: () {
                             setState(() {

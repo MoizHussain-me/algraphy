@@ -17,15 +17,12 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
   @override
   Widget build(BuildContext context) {
-    const Color backgroundDark = Color(0xFF080808);
-    const Color cardColor = Color(0xFF1C1C1C);
-    const Color primaryRed = Color(0xFFDC2726);
 
     return Scaffold(
-      backgroundColor: backgroundDark,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text("Setup Password"),
-        backgroundColor: backgroundDark,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         automaticallyImplyLeading: false, // Prevent going back
         actions: [
           IconButton(
@@ -86,7 +83,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryRed,
+                      backgroundColor: Theme.of(context).primaryColor,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),

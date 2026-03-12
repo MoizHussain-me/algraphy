@@ -29,7 +29,7 @@ class _TasksPageState extends State<TasksPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF080808),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openCreateTask,
         backgroundColor: const Color(0xFFDC2726),

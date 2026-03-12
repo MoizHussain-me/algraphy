@@ -31,15 +31,15 @@ class SideMenu extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      color: const Color(0xFF1C1C1C), 
+      color: Theme.of(context).colorScheme.surface, 
       child: Row(
         children: [
           CircleAvatar(
             radius: 28,
-            backgroundColor: AppColors.primaryRed,
+            backgroundColor: Theme.of(context).primaryColor,
             child: Text(
               fullName.isNotEmpty ? fullName[0].toUpperCase() : "U",
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+              style: Theme.of(context).textTheme.titleLarge,
             ),
           ),
           const SizedBox(width: 12),
@@ -49,30 +49,19 @@ class SideMenu extends StatelessWidget {
               children: [
                 Text(
                   fullName.isNotEmpty ? fullName : "User",
-                  style: const TextStyle(
-                      fontFamily: AppTypography.fontFamily,
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700),
+                  style: Theme.of(context).textTheme.bodyLarge,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   email,
-                  style: const TextStyle(
-                      fontFamily: AppTypography.fontFamily,
-                      color: Colors.grey,
-                      fontSize: 11),
+                  style: Theme.of(context).textTheme.bodyMedium,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
                   role,
-                  style: const TextStyle(
-                      fontFamily: AppTypography.fontFamily,
-                      color: AppColors.primaryRed,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.labelSmall,
                 ),
               ],
             ),
@@ -86,36 +75,60 @@ class SideMenu extends StatelessWidget {
       {required IconData icon,
       required String label,
       required String routeName}) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isActive = routeName == activeRoute;
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: Icon(icon, color: isActive ? AppColors.primaryRed : Colors.grey),
-      title: Text(
-        label,
-        style: TextStyle(
-          fontFamily: AppTypography.fontFamily,
-          color: isActive ? AppColors.primaryRed : Colors.grey,
-          fontWeight: isActive ? FontWeight.w700 : FontWeight.normal,
+    // Define colors based on theme and active state
+    final activeColor = theme.primaryColor;
+    final inactiveColor = isDark ? Colors.grey[400] : AppColors.textBlack;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2), // Added slight breathing room
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+        
+        // --- TINTED BACKGROUND FOR ACTIVE TAB ---
+        tileColor: isActive 
+            ? activeColor.withValues(alpha: isDark ? 0.1 : 0.05) 
+            : Colors.transparent,
+            
+        leading: Icon(
+          icon, 
+          color: isActive ? activeColor : inactiveColor, 
+          size: 22
         ),
+        
+        title: Text(
+          label,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: isActive ? activeColor : inactiveColor,
+            fontWeight: isActive ? FontWeight.w700 : FontWeight.w500, // Slightly bolder for better legibility
+          ),
+        ),
+        
+        trailing: isPersistent 
+            ? null 
+            : Icon(Icons.chevron_right, color: inactiveColor, size: 18),
+            
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), // Matches your cardTheme
+        
+        hoverColor: activeColor.withValues(alpha: 0.08),
+        
+        onTap: () {
+          if (!isPersistent) Navigator.of(context).pop();
+          if (routeName != activeRoute) {
+            Navigator.of(context).pushReplacementNamed(routeName);
+          }
+        },
       ),
-      trailing: isPersistent ? null : const Icon(Icons.chevron_right, color: Colors.grey),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      hoverColor: AppColors.primaryRed.withValues(alpha: 0.06),
-      onTap: () {
-        if (!isPersistent) Navigator.of(context).pop();
-        if (routeName != activeRoute) {
-          Navigator.of(context).pushReplacementNamed(routeName);
-        }
-      },
     );
   }
-
   @override
   Widget build(BuildContext context) {
     return Drawer(
       child: Container(
-        color: AppColors.backgroundDark,
+        color: Theme.of(context).scaffoldBackgroundColor,
         child: SafeArea(
           child: Column(
             children: [
@@ -130,7 +143,7 @@ class SideMenu extends StatelessWidget {
                     _buildMenuItem(context, icon: Icons.task_alt, label: 'Tasks', routeName: AppRoutes.tasks),
                     
                     if (currentUser.role != 'client') ...[
-                      const Divider(color: Colors.white10),
+                      //const Divider(color: Colors.white10),
                       // --- Organization / Modules (Internal Only) ---
                       // _buildMenuItem(context, icon: Icons.chat, label: 'Chats', routeName: AppRoutes.chats),
                       // _buildMenuItem(context, icon: Icons.work, label: 'Work', routeName: AppRoutes.work),
@@ -138,12 +151,12 @@ class SideMenu extends StatelessWidget {
                       // _buildMenuItem(context, icon: Icons.emoji_people, label: 'Talents', routeName: AppRoutes.talents),
                     ],
                     
-                    const Divider(color: Colors.white10),
+                    // const Divider(color: Colors.white10),
 
                     // --- Info & Support (Visible to All) ---
                     // _buildMenuItem(context, icon: Icons.miscellaneous_services, label: 'Services', routeName: AppRoutes.services),
                     // _buildMenuItem(context, icon: Icons.info, label: 'About', routeName: AppRoutes.about),
-                    _buildMenuItem(context, icon: Icons.contact_mail, label: 'Contact', routeName: AppRoutes.contact),
+                    //_buildMenuItem(context, icon: Icons.contact_mail, label: 'Contact', routeName: AppRoutes.contact),
                     // _buildMenuItem(context, icon: Icons.settings, label: 'Settings', routeName: AppRoutes.settings),
 
                     // --- Admin Section (Only for Admin/Manager) ---
@@ -151,7 +164,7 @@ class SideMenu extends StatelessWidget {
                       const Divider(color: Colors.white10),
                       Padding(
                         padding: const EdgeInsets.only(left: 16, top: 8, bottom: 4),
-                        child: Text("ADMINISTRATION", style: TextStyle(color: Colors.grey[600], fontSize: 10, fontWeight: FontWeight.bold)),
+                        child: Text("ADMINISTRATION", style: Theme.of(context).textTheme.labelSmall),
                       ),
                       _buildMenuItem(context, icon: Icons.person_add, label: 'Employees', routeName: AppRoutes.employees),
                     ],
@@ -162,7 +175,7 @@ class SideMenu extends StatelessWidget {
               const Divider(color: Colors.white10),
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.redAccent),
-                title: const Text("Logout", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600)),
+                title: Text("Logout", style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.redAccent, fontWeight: FontWeight.w600)),
                 onTap: () {
                   context.read<AuthBloc>().add(LogoutRequested());
                 },
