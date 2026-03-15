@@ -85,7 +85,12 @@ class _AttendancePageState extends State<AttendancePage> with SingleTickerProvid
         const ComingSoonPage(title: "Project Work"),
         const ComingSoonPage(title: "Client Chats"),
         const ComingSoonPage(title: "Shared Documents"),
-        ProfilePage(user: widget.currentUser, showScaffold: false),
+
+        ProfilePage(
+          user: widget.currentUser, 
+          loggedInUser: widget.currentUser, 
+          source: ProfileSource.dashboard
+        ),
       ];
     } else {
       views = [
@@ -94,7 +99,13 @@ class _AttendancePageState extends State<AttendancePage> with SingleTickerProvid
         MyLeavesView(key: _leavesViewKey),
         DocumentManagementPage(isAdmin: false),
         const AttendanceHistoryPage(),
-        ProfilePage(user: widget.currentUser, showScaffold: false),
+        ProfilePage(
+    user: widget.currentUser, 
+    loggedInUser: widget.currentUser, 
+    source: ProfileSource.attendance
+  ),
+
+        //ProfilePage(user: widget.currentUser, showScaffold: false),
       ];
 
       if (_isManager) {

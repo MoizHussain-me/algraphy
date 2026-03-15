@@ -141,6 +141,29 @@ class AuthRepository {
   
   // --- OTHER ACTIONS ---
 
+  Future<UserModel> validateSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString(AppConstants.tokenKey);
+    
+    if (token == null) throw Exception("No token available");
+
+    final response = await _api.get('verify_session', token: token);
+
+    if (response['status'] == 'success') {
+      final userData = response['user'];
+      if (userData == null) throw Exception("No user data from server");
+
+      final user = UserModel.fromMap(Map<String, dynamic>.from(userData));
+      
+      // Update local storage with fresh data
+      await persistUser(user);
+      
+      return user;
+    } else {
+      throw Exception(response['message'] ?? 'Session verification failed');
+    }
+  }
+
   Future<void> changePassword(String newPassword) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString(AppConstants.tokenKey);

@@ -298,7 +298,7 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
               builder: (_) => ProfilePage(
                 user: user,
                 loggedInUser: widget.currentUser,
-                showScaffold: true,
+                source: ProfileSource.management,
               ),
             ),
           );

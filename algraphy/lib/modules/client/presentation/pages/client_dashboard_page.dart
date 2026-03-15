@@ -60,7 +60,11 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> with SingleTi
                 const ComingSoonPage(title: "Project Work"),
                 const ComingSoonPage(title: "Client Chats"),
                 const ComingSoonPage(title: "Shared Documents"),
-                ProfilePage(user: widget.currentUser, showScaffold: false),
+                ProfilePage(
+                  user: widget.currentUser, 
+                  loggedInUser: widget.currentUser, 
+                  source: ProfileSource.dashboard
+                ),
               ],
             ),
           ),

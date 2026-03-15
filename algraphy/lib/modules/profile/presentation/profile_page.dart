@@ -1,483 +1,237 @@
-import 'package:algraphy/config/routes/app_routes.dart';
-import 'package:algraphy/modules/auth/data/models/user_model.dart';
-import 'package:algraphy/modules/common/widgets/main_scaffold.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/utils/image_helper.dart';
-import 'package:algraphy/modules/auth/presentation/bloc/auth_bloc.dart';
-import 'package:algraphy/modules/auth/presentation/bloc/auth_event.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:algraphy/core/theme/colors.dart';
+import 'package:algraphy/modules/auth/data/models/user_model.dart';
+import 'package:algraphy/core/utils/image_helper.dart';
+
+enum ProfileSource { attendance, management, dashboard }
 
 class ProfilePage extends StatelessWidget {
-  final UserModel user;
-  final UserModel? loggedInUser;
-  final bool showScaffold;
+  final UserModel user;           // The profile being viewed
+  final UserModel loggedInUser;   // The person viewing the profile
+  final ProfileSource source;     // Where they came from
 
   const ProfilePage({
     super.key,
     required this.user,
-    this.loggedInUser,
-    this.showScaffold = true,
+    required this.loggedInUser,
+    required this.source,
   });
 
-  String _formatDate(String? dateStr) {
-    if (dateStr == null || dateStr.isEmpty || dateStr == "0000-00-00") return "-";
-    try {
-      final date = DateTime.parse(dateStr);
-      return DateFormat('d MMM yyyy').format(date);
-    } catch (_) { return dateStr; }
-  }
-
-  String _formatCurrency(double? value) {
-    if (value == null) return "-";
-    return NumberFormat.currency(symbol: '\$', decimalDigits: 2).format(value);
-  }
-
-  Future<void> _makePhoneCall(BuildContext context, String? phone) async {
-    if (phone == null || phone.isEmpty || phone == "-") {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Phone number not available')));
-      return;
-    }
-    final Uri uri = Uri(scheme: 'tel', path: phone);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    }
-  }
-
-  Future<void> _sendEmail(BuildContext context, String? email) async {
-    if (email == null || email.isEmpty || email == "-") {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Email not available')));
-      return;
-    }
-    final Uri uri = Uri(scheme: 'mailto', path: email);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    }
-  }
-
-  Future<void> _sendSMS(BuildContext context, String? phone) async {
-    if (phone == null || phone.isEmpty || phone == "-") {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Phone number not available')));
-      return;
-    }
-    final Uri uri = Uri(scheme: 'sms', path: phone);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    }
-  }
-
-  void _shareProfile(BuildContext context) {
-    final text = 'Check out ${user.fullName}\'s profile on Algraphy!\n'
-        'Designation: ${user.designation ?? 'Team Member'}\n'
-        'Department: ${user.department ?? 'N/A'}\n'
-        'Email: ${user.email}';
-    Share.share(text);
-  }
+  // Logic: Show sensitive data ONLY if I am looking at myself
+  bool get isSelfView => user.id == loggedInUser.id;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final bool isClient = user.role == 'client';
 
-    Widget pageContent = CustomScrollView(
-      physics: const BouncingScrollPhysics(),
-      slivers: [
-        SliverToBoxAdapter(child: _buildHeader(context)),
-        SliverToBoxAdapter(child: _buildQuickActions(context)),
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              if (user.aboutMe != null && user.aboutMe!.isNotEmpty) ...[
-                _buildSection(
-                  context: context,
-                  title: "About Me",
-                  icon: Icons.info_outline,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Text(
-                        user.aboutMe!,
-                        style: TextStyle(color: theme.textTheme.bodyMedium?.color, fontSize: 14, height: 1.5),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-              ],
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SafeArea(
+        child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          children: [
+            _buildHeader(theme, isDark),
+            const SizedBox(height: 24),
+            
+            // 1. Quick Communication (Common for both)
+            _buildCommunicationRow(theme),
+            const SizedBox(height: 32),
 
-              if (isClient) ...[
-                _buildSection(
-                  context: context,
-                  title: "Business Information",
-                  icon: Icons.business_outlined,
-                  children: [
-                    _buildInfoTile(context, "Company / Brand", user.companyName ?? "-", Icons.storefront_outlined),
-                    _buildInfoTile(context, "Industry", user.industry ?? "-", Icons.category_outlined),
-                    _buildInfoTile(context, "Services Needed", user.servicesNeeded ?? "-", Icons.handyman_outlined),
-                  ],
-                ),
-                const SizedBox(height: 16),
-              ],
-
-              if (!isClient) ...[
-                _buildSection(
-                  context: context,
-                  title: "Work Information",
-                  icon: Icons.work_outline,
-                  children: [
-                    _buildInfoTile(context, "Employee ID", user.employeeId ?? "-", Icons.badge_outlined),
-                    _buildInfoTile(context, "Employee Code", user.employeeCode ?? "-", Icons.qr_code_outlined),
-                    _buildInfoTile(context, "Nick Name", user.nickName ?? "-", Icons.face_outlined),
-                    _buildInfoTile(context, "Reporting To", user.reportingManagerName ?? "-", Icons.account_tree_outlined),
-                    _buildInfoTile(context, "Date of Joining", _formatDate(user.dateOfJoining), Icons.calendar_month_outlined),
-                    _buildInfoTile(context, "Department", user.department ?? "-", Icons.lan_outlined),
-                    _buildInfoTile(context, "Location", user.location ?? "-", Icons.location_on_outlined),
-                    _buildInfoTile(context, "Designation", user.designation ?? "-", Icons.work_outline),
-                    _buildInfoTile(context, "Employment Type", user.employmentType ?? "-", Icons.assignment_ind_outlined),
-                    _buildInfoTile(context, "Status", user.employeeStatus ?? "-", Icons.check_circle_outline),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _buildSection(
-                  context: context,
-                  title: "Financial Information",
-                  icon: Icons.account_balance_wallet_outlined,
-                  children: [
-                    _buildInfoTile(context, "Monthly Salary", _formatCurrency(user.salary), Icons.payments_outlined),
-                    _buildInfoTile(context, "Hourly Rate", _formatCurrency(user.employeeHourlyRate), Icons.timer_outlined),
-                    _buildInfoTile(context, "Last Month Commission", _formatCurrency(user.lastMonthCommission), Icons.trending_up),
-                    _buildInfoTile(context, "IBAN", user.iban ?? "-", Icons.credit_card_outlined),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _buildSection(
-                  context: context,
-                  title: "Experience & Expertise",
-                  icon: Icons.psychology_outlined,
-                  children: [
-                    _buildInfoTile(context, "Current Experience", user.currentExperience ?? "-", Icons.history_toggle_off),
-                    _buildInfoTile(context, "Total Experience", user.totalExperience ?? "-", Icons.history),
-                    _buildInfoTile(context, "Expertise", user.expertise ?? "-", Icons.star_outline),
-                    _buildInfoTile(context, "Source of Hire", user.sourceOfHire ?? "-", Icons.campaign_outlined),
-                    _buildInfoTile(context, "Job Description", user.jobDescription ?? "-", Icons.description_outlined),
-                    _buildInfoTile(context, "Sub Job Description", user.subJobDescription ?? "-", Icons.subject_outlined),
-                  ],
-                ),
-                const SizedBox(height: 16),
-              ],
-
-              _buildSection(
-                context: context,
-                title: "Contact Details",
-                icon: Icons.contact_mail_outlined,
-                children: [
-                  _buildInfoTile(context, "Work Email", user.email, Icons.alternate_email),
-                  _buildInfoTile(context, "Personal Email", user.personalEmailAddress ?? "-", Icons.email_outlined),
-                  _buildInfoTile(context, "Mobile", user.personalMobileNumber ?? "-", Icons.phone_android),
-                  if (!isClient) ...[
-                    _buildInfoTile(context, "Work Phone", user.workPhoneNumber ?? "-", Icons.phone_callback_outlined),
-                    _buildInfoTile(context, "Extension", user.extension ?? "-", Icons.phone_forwarded_outlined),
-                    _buildInfoTile(context, "Seating", user.seatingLocation ?? "-", Icons.chair_alt_outlined),
-                  ],
-                ],
-              ),
-              const SizedBox(height: 16),
-              if (!isClient) ...[
-                _buildSection(
-                  context: context,
-                  title: "Addresses",
-                  icon: Icons.home_outlined,
-                  children: [
-                    _buildInfoTile(context, "Present Address", user.presentAddress ?? "-", Icons.location_searching),
-                    _buildInfoTile(context, "Permanent Address", user.permanentAddress ?? "-", Icons.house_outlined),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _buildSection(
-                  context: context,
-                  title: "Personal Information",
-                  icon: Icons.person_outline,
-                  children: [
-                    _buildInfoTile(context, "Birthday", _formatDate(user.dateOfBirth), Icons.cake_outlined),
-                    _buildInfoTile(context, "Gender", user.gender ?? "-", Icons.fingerprint),
-                    _buildInfoTile(context, "Marital Status", user.maritalStatus ?? "-", Icons.favorite_border),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 24),
-
-              if (user.role == 'client') ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(isDark ? 0.05 : 0.02),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.red.withOpacity(0.1)),
-                    ),
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        Text(
-                          "Account Management",
-                          style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          "Deleting your account is permanent and cannot be undone.",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey, fontSize: 12),
-                        ),
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () => _showDeleteConfirmation(context),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            child: const Text("Delete Account", style: TextStyle(fontWeight: FontWeight.bold)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 40),
+            // 2. Professional Info (Visible to everyone)
+            _buildSectionTitle("Professional Details"),
+            _buildInfoCard(theme, [
+              _infoTile(theme, "Employee ID", user.employeeCode ?? "-", Icons.badge_outlined),
+              _infoTile(theme, "Designation", user.designation ?? "-", Icons.work_outline),
+              _infoTile(theme, "Department", user.department ?? "-", Icons.lan_outlined),
+              _infoTile(theme, "Reporting Manager (L1)", user.reportingManagerName ?? "-", Icons.account_tree_outlined),
+              if (user.secondaryReportingManagerName != null && user.secondaryReportingManagerName!.isNotEmpty)
+                _infoTile(theme, "Reporting Manager (L2)", user.secondaryReportingManagerName!, Icons.account_tree_outlined),
+              _infoTile(theme, "Location", user.location ?? "Office", Icons.location_on_outlined),
             ]),
-          ),
-        ),
-      ],
-    );
 
-    if (showScaffold) {
-      return MainScaffold(
-        title: "Profile",
-        currentUser: loggedInUser ?? user,
-        currentRoute: AppRoutes.profile,
-        body: Container(color: theme.scaffoldBackgroundColor, child: pageContent),
-      );
-    }
-    return Scaffold(backgroundColor: theme.scaffoldBackgroundColor, body: pageContent);
-  }
+            const SizedBox(height: 24),
 
-  Widget _buildHeader(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: isDark 
-            ? [const Color(0xFF251010), theme.scaffoldBackgroundColor] 
-            : [const Color(0xFFFEECEC), theme.scaffoldBackgroundColor],
-        ),
-      ),
-      child: Column(
-        children: [
-          Stack(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: theme.primaryColor.withOpacity(0.5), width: 2),
-                ),
-                child: CircleAvatar(
-                  radius: 55,
-                  backgroundColor: theme.cardColor,
-                  backgroundImage: _getProfileImage(user.profilePicture),
-                  child: user.profilePicture == null
-                      ? Text(
-                          user.firstName?[0] ?? "U",
-                          style: TextStyle(fontSize: 36, color: theme.textTheme.bodyLarge?.color),
-                        )
-                      : null,
-                ),
+            // 3. Manager/Admin Specific Actions
+            if (source == ProfileSource.management && !isSelfView) ...[
+              _buildSectionTitle("Manager Actions"),
+              _buildAdminActionTile(
+                "View Attendance Logs", 
+                Icons.history_toggle_off, 
+                Colors.blue, 
+                () => print("Navigate to logs for ${user.fullName}"),
               ),
-              Positioned(
-                bottom: 5,
-                right: 5,
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: const BoxDecoration(
-                    color: Colors.green,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.check, size: 12, color: Colors.white),
-                ),
+              _buildAdminActionTile(
+                "Leave History", 
+                Icons.calendar_month_outlined, 
+                Colors.orange, 
+                () => print("Navigate to leaves"),
               ),
             ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            user.fullName,
-            style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontSize: 26, fontWeight: FontWeight.bold, letterSpacing: -0.5),
-          ),
-          if (user.role != 'client') ...[
-            const SizedBox(height: 6),
-            Text(
-              user.designation?.toUpperCase() ?? 'STAFF',
-              style: TextStyle(color: theme.primaryColor.withOpacity(0.9), fontWeight: FontWeight.w600, fontSize: 13, letterSpacing: 1.2),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              user.department ?? 'General',
-              style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5), fontSize: 14),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
 
-  Widget _buildQuickActions(BuildContext context) {
-    final phone = user.personalMobileNumber ?? user.workPhoneNumber;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _actionIcon(context, Icons.phone, "Call", onTap: () => _makePhoneCall(context, phone)),
-          _actionIcon(context, Icons.message_rounded, "Message", onTap: () => _sendSMS(context, phone)),
-          _actionIcon(context, Icons.email_rounded, "Email", onTap: () => _sendEmail(context, user.email)),
-          _actionIcon(context, Icons.share_rounded, "Share", onTap: () => _shareProfile(context)),
-        ],
-      ),
-    );
-  }
+            // 4. Private Financial Info (Only visible if Self-Viewing)
+            if (isSelfView) ...[
+              const SizedBox(height: 24),
+              _buildSectionTitle("Private Financials"),
+              _buildInfoCard(theme, [
+                _infoTile(theme, "Monthly Salary", "\$${user.salary ?? '0.0'}", Icons.payments_outlined),
+                _infoTile(theme, "Bank IBAN", user.iban ?? "-", Icons.account_balance_wallet_outlined),
+              ]),
+            ],
+            
+            const SizedBox(height: 40),
+       ] ), // End of Column
+      ), // End of SingleChildScrollView
+    ), // End of SafeArea
+  ); // End of Scaffold
+}
 
-  Widget _actionIcon(BuildContext context, IconData icon, String label, {VoidCallback? onTap}) {
-    final theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Column(
-        children: [
+  // --- UI BUILDERS ---
+
+  Widget _buildHeader(ThemeData theme, bool isDark) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: theme.primaryColor.withOpacity(0.2), width: 2),
+          ),
+          child: CircleAvatar(
+            radius: 55,
+            backgroundColor: theme.primaryColor.withOpacity(0.1),
+            backgroundImage: user.profilePicture != null && user.profilePicture!.isNotEmpty
+                ? NetworkImage(ImageHelper.getFullUrl(user.profilePicture!))
+                : null,
+            child: (user.profilePicture == null || user.profilePicture!.isEmpty)
+                ? Text(user.firstName?[0] ?? "U", 
+                    style: TextStyle(fontSize: 36, color: theme.primaryColor, fontWeight: FontWeight.bold))
+                : null,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(user.fullName, 
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
+        const SizedBox(height: 4),
+        Text(user.email, style: TextStyle(color: Colors.grey.shade500, fontSize: 14)),
+        if (user.designation != null) ...[
+          const SizedBox(height: 8),
           Container(
-            height: 45,
-            width: 45,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: theme.cardColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: theme.dividerColor.withOpacity(0.1)),
+              color: theme.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
             ),
-            child: Icon(icon, color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7), size: 20),
+            child: Text(
+              user.designation!.toUpperCase(),
+              style: TextStyle(color: theme.primaryColor, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.1),
+            ),
           ),
-          const SizedBox(height: 6),
-          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
         ],
+      ],
+    );
+  }
+
+  Widget _buildCommunicationRow(ThemeData theme) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _iconBtn(theme, Icons.phone, "Call", () => _launch('tel:${user.personalMobileNumber ?? user.workPhoneNumber ?? ''}')),
+        _iconBtn(theme, Icons.message, "SMS", () => _launch('sms:${user.personalMobileNumber ?? user.workPhoneNumber ?? ''}')),
+        _iconBtn(theme, Icons.email, "Email", () => _launch('mailto:${user.email}')),
+      ],
+    );
+  }
+
+  Widget _iconBtn(ThemeData theme, IconData icon, String label, VoidCallback onTap) {
+    return Column(
+      children: [
+        IconButton.filledTonal(
+          onPressed: onTap, 
+          icon: Icon(icon, size: 20),
+          style: IconButton.styleFrom(
+            backgroundColor: theme.primaryColor.withOpacity(0.1),
+            foregroundColor: theme.primaryColor,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
+      ],
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12, left: 4),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(title.toUpperCase(), 
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blueGrey, letterSpacing: 1.2)),
       ),
     );
   }
 
-  Widget _buildSection({required BuildContext context, required String title, required IconData icon, required List<Widget> children}) {
-    final theme = Theme.of(context);
+  Widget _buildInfoCard(ThemeData theme, List<Widget> children) {
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.dividerColor.withOpacity(0.1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-            child: Row(
-              children: [
-                Icon(icon, color: theme.primaryColor, size: 18),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: theme.textTheme.bodyLarge?.color),
-                ),
-              ],
-            ),
-          ),
-          Divider(color: theme.dividerColor.withOpacity(0.1), thickness: 1),
-          ...children,
-          const SizedBox(height: 8),
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100),
+        boxShadow: isDark ? [] : [
+          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
+      child: Column(children: children),
     );
   }
 
-  Widget _buildInfoTile(BuildContext context, String label, String value, IconData icon) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: theme.scaffoldBackgroundColor.withOpacity(0.5), borderRadius: BorderRadius.circular(8)),
-            child: Icon(icon, color: Colors.grey[600], size: 18),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: TextStyle(color: Colors.grey[500], fontSize: 11, fontWeight: FontWeight.w500)),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: TextStyle(color: theme.textTheme.bodyMedium?.color, fontSize: 13, fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  ImageProvider? _getProfileImage(String? path) {
-    if (path == null || path.isEmpty) return null;
-    return NetworkImage(ImageHelper.getFullUrl(path));
-  }
-
-  void _showDeleteConfirmation(BuildContext context) {
-    final theme = Theme.of(context);
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: theme.cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text("Delete Account?", style: TextStyle(color: theme.textTheme.bodyLarge?.color)),
-        content: const Text(
-          "Are you absolutely sure? This will permanently delete your profile and all associated data. This action cannot be undone.",
-          style: TextStyle(color: Colors.grey),
+  Widget _infoTile(ThemeData theme, String label, String value, IconData icon) {
+    final isDark = theme.brightness == Brightness.dark;
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: theme.primaryColor.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(10),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              context.read<AuthBloc>().add(DeleteAccountRequested());
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text("Delete Forever"),
-          ),
-        ],
+        child: Icon(icon, size: 18, color: Colors.grey.shade500),
+      ),
+      title: Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+      subtitle: Text(value, style: TextStyle(
+        fontSize: 14, 
+        fontWeight: FontWeight.w600, 
+        color: isDark ? Colors.white70 : Colors.black87
+      )),
+      dense: true,
+      visualDensity: VisualDensity.compact,
+    );
+  }
+
+  Widget _buildAdminActionTile(String title, IconData icon, Color color, VoidCallback onTap) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 0,
+      color: color.withOpacity(0.05),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16), 
+        side: BorderSide(color: color.withOpacity(0.1))
+      ),
+      child: ListTile(
+        onTap: onTap,
+        leading: Icon(icon, color: color, size: 20),
+        title: Text(title, style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 13)),
+        trailing: Icon(Icons.chevron_right, color: color, size: 18),
+        dense: true,
       ),
     );
+  }
+
+  Future<void> _launch(String url) async {
+    if (url.isEmpty || url.endsWith(':')) return;
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 }

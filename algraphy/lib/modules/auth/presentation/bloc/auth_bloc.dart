@@ -13,11 +13,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       try {
         final user = await _repo.getCurrentUser();
         if (user != null) {
-          emit(AuthAuthenticated(user));
+          // Verify with server to ensure account still exists
+          try {
+            final verifiedUser = await _repo.validateSession();
+            emit(AuthAuthenticated(verifiedUser));
+          } catch (e) {
+            logger.w("AUTH: Session stale or user deleted: $e");
+            await _repo.logout();
+            emit(AuthUnauthenticated());
+          }
         } else {
           emit(AuthUnauthenticated());
         }
-      } catch (_) {
+      } catch (e) {
+        logger.e("AUTH: App start error: $e");
         emit(AuthUnauthenticated());
       }
     });

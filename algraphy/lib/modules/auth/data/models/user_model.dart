@@ -66,6 +66,7 @@ class UserModel {
   final String? reportingManager; // ID
   final String? reportingManagerName; // Name
   final String? secondaryReportingManager; // ID
+  final String? secondaryReportingManagerName; // Name
 
   UserModel({
     required this.id, required this.email, required this.password,
@@ -80,7 +81,7 @@ class UserModel {
     this.department, this.location, this.designation, this.dateOfJoining,
     this.employmentType, this.employeeStatus, this.sourceOfHire,
     this.currentExperience, this.totalExperience, this.jobDescription, this.subJobDescription,
-    this.reportingManager, this.reportingManagerName, this.secondaryReportingManager,
+    this.reportingManager, this.reportingManagerName, this.secondaryReportingManager, this.secondaryReportingManagerName,
     this.companyName, this.industry, this.servicesNeeded,
     this.officeId, this.officeName,
   });
@@ -171,6 +172,7 @@ class UserModel {
       reportingManager: m['reporting_manager_id']?.toString(),
       reportingManagerName: m['reporting_manager_name'],
       secondaryReportingManager: m['secondary_reporting_manager_id']?.toString(),
+      secondaryReportingManagerName: m['secondary_reporting_manager_name'],
       companyName: m['company_name'] ?? m['companyName'],
       industry: m['industry'],
       servicesNeeded: m['services_needed'] ?? m['servicesNeeded'],
@@ -268,6 +270,8 @@ class UserModel {
       'reportingManager': reportingManager,
       'secondary_reporting_manager_id': secondaryReportingManager,
       'secondaryReportingManager': secondaryReportingManager,
+      'secondary_reporting_manager_name': secondaryReportingManagerName,
+      'secondaryReportingManagerName': secondaryReportingManagerName,
 
       // CLIENT SPECIFIC
       'company_name': companyName,
@@ -324,6 +328,7 @@ class UserModel {
     String? reportingManager,
     String? reportingManagerName,
     String? secondaryReportingManager,
+    String? secondaryReportingManagerName,
     String? companyName,
     String? industry,
     String? servicesNeeded,
@@ -374,6 +379,7 @@ class UserModel {
       reportingManager: reportingManager ?? this.reportingManager,
       reportingManagerName: reportingManagerName ?? this.reportingManagerName,
       secondaryReportingManager: secondaryReportingManager ?? this.secondaryReportingManager,
+      secondaryReportingManagerName: secondaryReportingManagerName ?? this.secondaryReportingManagerName,
       companyName: companyName ?? this.companyName,
       industry: industry ?? this.industry,
       servicesNeeded: servicesNeeded ?? this.servicesNeeded,

@@ -1,3 +1,4 @@
+import 'package:algraphy/modules/auth/presentation/bloc/auth_bloc.dart';
 import 'package:algraphy/modules/auth/presentation/bloc/auth_event.dart';
 import 'package:algraphy/modules/auth/presentation/bloc/auth_state.dart';
 import 'package:algraphy/core/utils/constants.dart';
@@ -5,18 +6,7 @@ import 'package:algraphy/config/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../bloc/auth_bloc.dart';
-
 import 'dart:ui';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:url_launcher/url_launcher.dart';
-
-// Your Imports
-import 'package:algraphy/modules/auth/presentation/bloc/auth_bloc.dart';
-import 'package:algraphy/modules/auth/presentation/bloc/auth_event.dart';
-import 'package:algraphy/modules/auth/presentation/bloc/auth_state.dart';
-import 'package:algraphy/core/utils/constants.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

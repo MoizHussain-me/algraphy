@@ -96,7 +96,11 @@ class AppRouter {
             title: 'Profile',
             currentRoute: AppRoutes.profile,
             currentUser: user,
-            body: ProfilePage(user: user, showScaffold: false),
+            body: ProfilePage(
+              user: user, 
+              loggedInUser: user, 
+              source: ProfileSource.dashboard
+            ),
           ),
         );
 
