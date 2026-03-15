@@ -49,7 +49,7 @@ class EmployeeRepository {
       final response = await _api.get('attendance_status', token: token);
 
       if (response['status'] == 'success') {
-        return response['data'];
+        return response; // Return full response to get 'data' and 'geofence'
       } else {
         return null; 
       }

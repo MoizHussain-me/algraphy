@@ -283,4 +283,54 @@ class AdminRepository {
       rethrow;
     }
   }
+
+  // ==========================================
+  // MODULE 11: GEOFENCING / OFFICE CRUD
+  // ==========================================
+
+  Future<List<Map<String, dynamic>>> getOffices() async {
+    try {
+      final token = await SessionService.getToken();
+      if (token == null) throw Exception("Unauthorized");
+      final response = await _api.get('get_offices', token: token);
+      if (response['status'] == 'success') {
+        return List<Map<String, dynamic>>.from(response['data'] ?? []);
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<void> saveOffice(Map<String, dynamic> data) async {
+    final token = await SessionService.getToken();
+    if (token == null) throw Exception("Unauthorized");
+    final response = await _api.post('save_office', data, token: token);
+    if (response['status'] != 'success') throw Exception(response['message'] ?? "Failed to save office");
+  }
+
+  Future<void> deleteOffice(String id) async {
+    final token = await SessionService.getToken();
+    if (token == null) throw Exception("Unauthorized");
+    final response = await _api.post('delete_office', {'id': id}, token: token);
+    if (response['status'] != 'success') throw Exception(response['message'] ?? "Failed to delete office");
+  }
+
+  Future<void> bulkAssignOffice(String officeId, List<String> employeeIds) async {
+    try {
+      final token = await SessionService.getToken();
+      if (token == null) throw Exception("Unauthorized");
+      
+      final response = await _api.post('bulk_assign_office', {
+        'office_id': officeId,
+        'employee_ids': employeeIds,
+      }, token: token);
+
+      if (response['status'] != 'success') {
+        throw Exception(response['message'] ?? "Bulk assignment failed");
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

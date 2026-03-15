@@ -10,6 +10,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:algraphy/core/theme/colors.dart';
 
+
 class AttendanceTimerView extends StatefulWidget {
   final UserModel userName;
 
@@ -36,10 +37,21 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
   String? _status; 
   bool _isLoading = true;
 
+  // Geofencing States
+  double? _distanceFromOffice;
+  bool _isWithinRange = false;
+
+  // Dynamic Geofence Values
+  double? _targetLat;
+  double? _targetLng;
+  double? _targetRadius;
+  String? _officeName;
+
   @override
   void initState() {
     super.initState();
     _fetchStatus();
+    _updateLocationAndDistance();
   }
 
   @override
@@ -50,49 +62,96 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
   
   Future<void> _fetchStatus() async {
     try {
-      final data = await GetIt.I<EmployeeRepository>().getTodayStatus();
+      final response = await GetIt.I<EmployeeRepository>().getTodayStatus();
       
       if (mounted) {
         setState(() {
-          if (data != null) {
-            _attendanceId = data['id']?.toString();
-            _status = data['status'];
-            
-            if (data['clock_in'] != null) {
-              _checkInTime = DateTime.parse(data['clock_in']);
+          if (response != null) {
+            final data = response['data'];
+            final geo = response['geofence'];
+
+            if (geo != null) {
+              _targetLat = double.tryParse(geo['geofence_lat']?.toString() ?? '');
+              _targetLng = double.tryParse(geo['geofence_lng']?.toString() ?? '');
+              _targetRadius = double.tryParse(geo['geofence_radius']?.toString() ?? '');
+              _officeName = geo['office_name'];
             }
-            if (data['clock_out'] != null) {
-              _checkOutTime = DateTime.parse(data['clock_out']);
+
+            if (data != null) {
+              _attendanceId = data['id']?.toString();
+              _status = data['status'];
+              
+              if (data['clock_in'] != null) {
+                _checkInTime = DateTime.parse(data['clock_in']);
+              }
+              if (data['clock_out'] != null) {
+                _checkOutTime = DateTime.parse(data['clock_out']);
+              }
+              if (data['break_start'] != null) {
+                _breakStartTime = DateTime.parse(data['break_start']);
+              }
+              
+              // Resume Timer Logic
+              if (_status == 'Completed' && _checkOutTime != null && _checkInTime != null) {
+                 _elapsedTime = _checkOutTime!.difference(_checkInTime!);
+              } else if (_checkInTime != null) {
+                 _startLocalTicker();
+              }
+            } else {
+              _status = null;
+              _elapsedTime = Duration.zero;
             }
-            if (data['break_start'] != null) {
-              _breakStartTime = DateTime.parse(data['break_start']);
-            }
-            
-            // Resume Timer Logic
-            if (_status == 'Completed' && _checkOutTime != null && _checkInTime != null) {
-               // If completed, fix the time to the final duration
-               _elapsedTime = _checkOutTime!.difference(_checkInTime!);
-            } else if (_checkInTime != null) {
-               _startLocalTicker();
-            }
-          } else {
-            // No record found for today
-            _status = null;
-            _elapsedTime = Duration.zero;
           }
           _isLoading = false;
         });
+        // After fetching status (which includes geofence data), update distance
+        _updateLocationAndDistance();
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  Future<void> _updateLocationAndDistance() async {
+    try {
+      if (_targetLat == null || _targetLng == null) return;
+      
+      if (!await _checkLocationPermission()) return;
+      
+      Position pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high
+      );
+
+      double distance = Geolocator.distanceBetween(
+        pos.latitude, 
+        pos.longitude, 
+        _targetLat!, 
+        _targetLng!
+      );
+
+      if (mounted) {
+        setState(() {
+          _distanceFromOffice = distance;
+          _isWithinRange = distance <= (_targetRadius ?? 100.0);
+        });
+      }
+    } catch (e) {
+      debugPrint("Error updating geofence: $e");
+    }
+  }
+
   // --- Actions ---
 
   Future<void> _handleClockIn() async {
-    // 1. Check Permissions first
+    // 1. Check Permissions and Geofence
     if (!await _checkLocationPermission()) return;
+    
+    await _updateLocationAndDistance();
+    
+    if (!_isWithinRange) {
+      _showError("You are too far from the office (${_distanceFromOffice?.toStringAsFixed(0)}m). Please go to the office to clock in.");
+      return;
+    }
 
     setState(() => _isLoading = true);
     try {
@@ -107,8 +166,16 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
   Future<void> _handleClockOut() async {
     if (_attendanceId == null) return;
     
-    // 1. Check Permissions
+    // 1. Check Permissions and Geofence
     if (!await _checkLocationPermission()) return;
+    
+    await _updateLocationAndDistance();
+    
+    if (!_isWithinRange) {
+      _showError("You are too far from the office (${_distanceFromOffice?.toStringAsFixed(0)}m). Please go back to the office to clock out.");
+      return;
+    }
+
     // Validate Break Status
     if (_status == 'On Break') {
       _showError("Please Resume Work before Checking Out");
@@ -344,6 +411,45 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
                   isCompleted ? "Total Hours Worked" : "Working Hours", 
                   style: const TextStyle(color: textGrey, fontSize: 14)
                 ),
+
+                // Geofence Distance Indicator
+                const SizedBox(height: 16),
+                if (_distanceFromOffice != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _isWithinRange ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _isWithinRange ? Icons.location_on : Icons.location_off,
+                          size: 14,
+                          color: _isWithinRange ? Colors.green : Colors.red,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _isWithinRange 
+                            ? "Within Range (${_distanceFromOffice!.toStringAsFixed(0)}m)" 
+                            : "Out of Range (${_distanceFromOffice!.toStringAsFixed(0)}m)",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: _isWithinRange ? Colors.green : Colors.red,
+                          ),
+                        ),
+                        if (_officeName != null) ...[
+                          const SizedBox(width: 4),
+                          Text(
+                            "at $_officeName",
+                            style: TextStyle(fontSize: 10, color: _isWithinRange ? Colors.green.withOpacity(0.7) : Colors.red.withOpacity(0.7)),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
 
                 // Break Timer (Visible only when on break)
                 if (isOnBreak) ...[

@@ -58,6 +58,10 @@ class UserModel {
   final String? industry;
   final String? servicesNeeded;
 
+  // -- OFFICE / GEOFENCE --
+  final String? officeId;
+  final String? officeName;
+
   // -- HIERARCHY --
   final String? reportingManager; // ID
   final String? reportingManagerName; // Name
@@ -78,6 +82,7 @@ class UserModel {
     this.currentExperience, this.totalExperience, this.jobDescription, this.subJobDescription,
     this.reportingManager, this.reportingManagerName, this.secondaryReportingManager,
     this.companyName, this.industry, this.servicesNeeded,
+    this.officeId, this.officeName,
   });
 
   bool get isManager => role == 'admin' || role == 'manager' || directReportsCount > 0;
@@ -169,6 +174,8 @@ class UserModel {
       companyName: m['company_name'] ?? m['companyName'],
       industry: m['industry'],
       servicesNeeded: m['services_needed'] ?? m['servicesNeeded'],
+      officeId: m['office_id']?.toString(),
+      officeName: m['office_name'],
     );
   }
 
@@ -268,6 +275,8 @@ class UserModel {
       'industry': industry,
       'services_needed': servicesNeeded,
       'servicesNeeded': servicesNeeded,
+      'office_id': officeId,
+      'officeId': officeId,
     };
   }
 
@@ -318,6 +327,8 @@ class UserModel {
     String? companyName,
     String? industry,
     String? servicesNeeded,
+    String? officeId,
+    String? officeName,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -366,6 +377,8 @@ class UserModel {
       companyName: companyName ?? this.companyName,
       industry: industry ?? this.industry,
       servicesNeeded: servicesNeeded ?? this.servicesNeeded,
+      officeId: officeId ?? this.officeId,
+      officeName: officeName ?? this.officeName,
     );
   }
 }

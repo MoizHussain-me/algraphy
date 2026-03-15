@@ -7,6 +7,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/utils/image_helper.dart';
 import 'package:algraphy/modules/auth/presentation/bloc/auth_bloc.dart';
 import 'package:algraphy/modules/auth/presentation/bloc/auth_event.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:algraphy/core/theme/colors.dart';
 
 class ProfilePage extends StatelessWidget {
   final UserModel user;
@@ -31,6 +34,47 @@ class ProfilePage extends StatelessWidget {
   String _formatCurrency(double? value) {
     if (value == null) return "-";
     return NumberFormat.currency(symbol: '\$', decimalDigits: 2).format(value);
+  }
+
+  Future<void> _makePhoneCall(BuildContext context, String? phone) async {
+    if (phone == null || phone.isEmpty || phone == "-") {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Phone number not available')));
+      return;
+    }
+    final Uri uri = Uri(scheme: 'tel', path: phone);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
+  Future<void> _sendEmail(BuildContext context, String? email) async {
+    if (email == null || email.isEmpty || email == "-") {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Email not available')));
+      return;
+    }
+    final Uri uri = Uri(scheme: 'mailto', path: email);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
+  Future<void> _sendSMS(BuildContext context, String? phone) async {
+    if (phone == null || phone.isEmpty || phone == "-") {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Phone number not available')));
+      return;
+    }
+    final Uri uri = Uri(scheme: 'sms', path: phone);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
+  void _shareProfile(BuildContext context) {
+    final text = 'Check out ${user.fullName}\'s profile on Algraphy!\n'
+        'Designation: ${user.designation ?? 'Team Member'}\n'
+        'Department: ${user.department ?? 'N/A'}\n'
+        'Email: ${user.email}';
+    Share.share(text);
   }
 
   @override
@@ -301,37 +345,42 @@ class ProfilePage extends StatelessWidget {
   }
 
   Widget _buildQuickActions(BuildContext context) {
+    final phone = user.personalMobileNumber ?? user.workPhoneNumber;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _actionIcon(context, Icons.phone, "Call"),
-          _actionIcon(context, Icons.message_rounded, "Message"),
-          _actionIcon(context, Icons.email_rounded, "Email"),
-          _actionIcon(context, Icons.share_rounded, "Share"),
+          _actionIcon(context, Icons.phone, "Call", onTap: () => _makePhoneCall(context, phone)),
+          _actionIcon(context, Icons.message_rounded, "Message", onTap: () => _sendSMS(context, phone)),
+          _actionIcon(context, Icons.email_rounded, "Email", onTap: () => _sendEmail(context, user.email)),
+          _actionIcon(context, Icons.share_rounded, "Share", onTap: () => _shareProfile(context)),
         ],
       ),
     );
   }
 
-  Widget _actionIcon(BuildContext context, IconData icon, String label) {
+  Widget _actionIcon(BuildContext context, IconData icon, String label, {VoidCallback? onTap}) {
     final theme = Theme.of(context);
-    return Column(
-      children: [
-        Container(
-          height: 45,
-          width: 45,
-          decoration: BoxDecoration(
-            color: theme.cardColor,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: theme.dividerColor.withOpacity(0.1)),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Column(
+        children: [
+          Container(
+            height: 45,
+            width: 45,
+            decoration: BoxDecoration(
+              color: theme.cardColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: theme.dividerColor.withOpacity(0.1)),
+            ),
+            child: Icon(icon, color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7), size: 20),
           ),
-          child: Icon(icon, color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7), size: 20),
-        ),
-        const SizedBox(height: 6),
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
-      ],
+          const SizedBox(height: 6),
+          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+        ],
+      ),
     );
   }
 

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:algraphy/modules/auth/data/models/user_model.dart';
 import '../views/registration_stepper_view.dart';
 import '../views/team_attendance_view.dart';
+import '../views/geofence_management_view.dart';
 import '../../../../modules/common/widgets/coming_soon_page.dart';
 import 'all_employees_page.dart'; 
 
@@ -44,7 +45,7 @@ class _EmployeeManagementPageState extends State<EmployeeManagementPage> with Si
 
   void _setupTabs() {
     if (widget.isAdmin) {
-      _tabs = ["Directory", "Attendance", "Onboarding", "Org Tree", "Documents"];
+      _tabs = ["Directory", "Attendance", "Onboarding", "Geofencing", "Org Tree", "Documents"];
     } else {
       _tabs = ["Directory", "Attendance", "Org Tree", "Documents"];
     }
@@ -101,6 +102,7 @@ class _EmployeeManagementPageState extends State<EmployeeManagementPage> with Si
       } else {
         views.add(const _MobileOnboardingRestrictedView());
       }
+      views.add(const GeofenceManagementView());
       views.add(const ComingSoonPage(title: "Organization Tree"));
       views.add(const DocumentManagementPage(isAdmin: true));
     } else {

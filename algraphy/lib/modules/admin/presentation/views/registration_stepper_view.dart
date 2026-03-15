@@ -27,6 +27,7 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
 
   List<String> _departments = []; 
   List<UserModel> _employeeList = []; 
+  List<Map<String, dynamic>> _officeList = [];
   bool _isLoadingData = true;
 
   // --- CONTROLLERS ---
@@ -56,6 +57,7 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
 
   String? _selectedReportingManagerId;
   String? _selectedSecondaryManagerId;
+  String? _selectedOfficeId;
 
   final _dobCtrl = TextEditingController();
   final _ageCtrl = TextEditingController(); 
@@ -95,12 +97,14 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
       final results = await Future.wait([
         repo.getDepartments(),
         repo.getAllEmployees(),
+        repo.getOffices(),
       ]);
       
       if (mounted) {
         setState(() {
           _departments = results[0] as List<String>;
           _employeeList = results[1] as List<UserModel>;
+          _officeList = results[2] as List<Map<String, dynamic>>;
           _isLoadingData = false;
         });
         if (widget.userToEdit != null) _prefillUserData(widget.userToEdit!);
@@ -148,6 +152,7 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
     _permanentAddressCtrl.text = user.permanentAddress ?? ''; 
     _selectedReportingManagerId = user.reportingManager;
     _selectedSecondaryManagerId = user.secondaryReportingManager;
+    _selectedOfficeId = user.officeId;
     _profilePicPath = user.profilePicture;
     if (mounted) setState(() {});
   }
@@ -219,6 +224,7 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
       permanentAddress: _permanentAddressCtrl.text,
       reportingManager: _selectedReportingManagerId,
       secondaryReportingManager: _selectedSecondaryManagerId,
+      officeId: _selectedOfficeId,
     );
 
     try {
@@ -335,7 +341,7 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
       case 3: // WORK
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _sectionHeader("Work Information", theme), const SizedBox(height: 20),
-          _buildTwoColumnRow(_customDropdown("Department", _departments, theme, (val) => setState(() => _selectedDepartment = val), isRequired: true), _customTextField("Location", _locationCtrl, theme, icon: Icons.place)),
+          _buildTwoColumnRow(_customDropdown("Department", _departments, theme, (val) => setState(() => _selectedDepartment = val), isRequired: true), _officeDropdown("Assigned Office", _selectedOfficeId, theme, (val) => setState(() => _selectedOfficeId = val))),
           const SizedBox(height: 16),
           _buildTwoColumnRow(_customTextField("Designation", _designationCtrl, theme, icon: Icons.badge), _customTextField("Date of Joining", _dojCtrl, theme, icon: Icons.calendar_today, isDate: true)),
           const SizedBox(height: 16),
@@ -459,6 +465,33 @@ class _RegistrationStepperViewState extends State<RegistrationStepperView> {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)
       ), 
       items: dropdownItems, 
+      onChanged: onChanged
+    );
+  }
+
+  Widget _officeDropdown(String label, String? selectedId, ThemeData theme, Function(String?) onChanged) {
+    final Set<String> seenIds = {};
+    final List<DropdownMenuItem<String>> dropdownItems = [];
+    for (var office in _officeList) {
+      final id = office['id'].toString();
+      if (!seenIds.contains(id)) {
+        seenIds.add(id);
+        dropdownItems.add(DropdownMenuItem(value: id, child: Text(office['name'])));
+      }
+    }
+    String? validId = (selectedId != null && seenIds.contains(selectedId)) ? selectedId : null;
+    return DropdownButtonFormField<String>(
+      value: validId,
+      dropdownColor: theme.cardColor,
+      style: TextStyle(color: theme.textTheme.bodyLarge?.color),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: theme.hintColor),
+        filled: true,
+        fillColor: theme.brightness == Brightness.dark ? const Color(0xFF2C2C2C) : theme.scaffoldBackgroundColor,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)
+      ),
+      items: dropdownItems,
       onChanged: onChanged
     );
   }
