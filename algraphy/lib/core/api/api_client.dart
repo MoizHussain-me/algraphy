@@ -80,12 +80,13 @@ class ApiClient {
   }
 
   // --- 3. POST Multipart Request (File Uploads) ---
- Future<Map<String, dynamic>> postMultipart(
+  Future<Map<String, dynamic>> postMultipart(
     String action, 
     Map<String, String> fields, 
     {
-      Map<String, String?>? filePaths, // For Mobile (Path)
+      Map<String, String?>? filePaths, // For Mobile/Desktop (Path)
       Map<String, List<int>?>? fileBytes, // For Web (Bytes)
+      Map<String, String>? fileNames, // New: Custom filenames for bytes
       String? token,
     }
   ) async {
@@ -101,9 +102,9 @@ class ApiClient {
     // 2. Add Text Fields
     request.fields.addAll(fields);
 
-    // 3. Add Files (Mobile - Path)
-    if (filePaths != null && !kIsWeb) {
-      for (var entry in filePaths.entries) {
+    // 3. Add Files (Mobile/Desktop - Path)
+    if (filePaths != null && (!kIsWeb || (kIsWeb && false))) { // kIsWeb check is standard
+       for (var entry in filePaths.entries) {
         if (entry.value != null && entry.value!.isNotEmpty) {
           request.files.add(await http.MultipartFile.fromPath(
             entry.key,
@@ -113,15 +114,15 @@ class ApiClient {
       }
     }
 
-    // 4. Add Files (Web - Bytes)
+    // 4. Add Files (Web/Bytes - Bytes)
     if (fileBytes != null) {
       for (var entry in fileBytes.entries) {
         if (entry.value != null && entry.value!.isNotEmpty) {
+          final fileName = fileNames?[entry.key] ?? "${entry.key}.bin";
           request.files.add(http.MultipartFile.fromBytes(
             entry.key,
             entry.value!,
-            filename: "${entry.key}.jpg", // Default name, PHP renames it anyway
-            contentType: http.MediaType('image', 'jpeg'),
+            filename: fileName,
           ));
         }
       }

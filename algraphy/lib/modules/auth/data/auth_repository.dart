@@ -27,16 +27,17 @@ class AuthRepository {
         throw Exception("Server Error: Login successful but no user data returned.");
       }
 
-      final userMap = Map<String, dynamic>.from(userData);
-      final user = UserModel.fromMap(userMap);
+      final user = UserModel.fromMap(Map<String, dynamic>.from(userData));
 
       // CRITICAL: Save session before returning
       await _saveSession(user, token);
       
-      logger.i("AUTH: Login successful and session saved.");
+      logger.i("AUTH: Login successful for ${user.email}");
       return user;
     } else {
-      throw Exception(response['message'] ?? 'Login failed');
+      final msg = response['message'] ?? 'Login failed';
+      logger.w("AUTH: Login failed with message: $msg");
+      throw Exception(msg);
     }
   }
 

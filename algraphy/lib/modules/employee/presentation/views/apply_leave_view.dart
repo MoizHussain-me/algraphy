@@ -375,7 +375,6 @@ class _EmployeePickerModalState extends State<_EmployeePickerModal> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final baseUrl = AppConstants.apiBaseUrl.replaceAll('routes/api.php', '');
     
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
@@ -433,7 +432,7 @@ class _EmployeePickerModalState extends State<_EmployeePickerModal> {
                           leading: CircleAvatar(
                             backgroundColor: const Color(0xFFDC2726),
                             backgroundImage: (emp['profile_picture'] != null && emp['profile_picture'].toString().isNotEmpty && emp['profile_picture'] != "null")
-                              ? NetworkImage("$baseUrl${emp['profile_picture']}") 
+                              ? NetworkImage("${AppConstants.rootUrl}${emp['profile_picture']}") 
                               : null,
                             child: (emp['profile_picture'] == null || emp['profile_picture'] == "null" || emp['profile_picture'].toString().isEmpty)
                               ? Text(

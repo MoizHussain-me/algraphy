@@ -36,8 +36,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       try {
         final user = await _repo.login(event.email, event.password);
         emit(AuthAuthenticated(user));
-      } catch (e) {
+      } on Exception catch (e) {
         emit(AuthFailure(e.toString().replaceAll('Exception: ', '')));
+      } catch (e) {
+        emit(AuthFailure("An unexpected error occurred: $e"));
       }
     });
 
