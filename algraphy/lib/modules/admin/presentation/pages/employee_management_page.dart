@@ -2,7 +2,7 @@ import 'package:algraphy/modules/signature/presentation/pages/document_managemen
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb; 
 import 'package:algraphy/modules/auth/data/models/user_model.dart';
-import '../views/registration_stepper_view.dart';
+import '../views/registration_form_view.dart';
 import '../views/team_attendance_view.dart';
 import '../views/geofence_management_view.dart';
 import '../../../../modules/common/widgets/coming_soon_page.dart';
@@ -97,11 +97,7 @@ class _EmployeeManagementPageState extends State<EmployeeManagementPage> with Si
 
     if (widget.isAdmin) {
       // Admin Views
-      if (kIsWeb) {
-        views.add(const RegistrationStepperView()); 
-      } else {
-        views.add(const _MobileOnboardingRestrictedView());
-      }
+      views.add(kIsWeb ? const RegistrationFormView() : const _MobileOnboardingRestrictedView()); 
       views.add(const GeofenceManagementView());
       views.add(const ComingSoonPage(title: "Organization Tree"));
       views.add(const DocumentManagementPage(isAdmin: true));
@@ -119,8 +115,20 @@ class _MobileOnboardingRestrictedView extends StatelessWidget {
   const _MobileOnboardingRestrictedView();
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text("Web Portal Only", style: TextStyle(color: Colors.white, fontSize: 18)),
-    );
+    return Center(child:Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+      Icon(Icons.construction, size: 64, color: Colors.grey[700]),
+          const SizedBox(height: 16),
+   Text(
+            'Web Portal Only',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[500],
+            ),
+          ),]));
+    
   }
 }

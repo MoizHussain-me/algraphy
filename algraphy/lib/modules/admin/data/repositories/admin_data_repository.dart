@@ -1,6 +1,7 @@
-import 'dart:typed_data';
-
 import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../../../../core/api/api_client.dart';
 import '../../../../core/services/session_service.dart';
 import '../../../auth/data/models/user_model.dart';
@@ -331,6 +332,44 @@ class AdminRepository {
       }
     } catch (e) {
       rethrow;
+    }
+  }
+
+  Future<String?> generateEmployeeId(String officeId) async {
+    try {
+      final token = await SessionService.getToken();
+      if (token == null) throw Exception("Unauthorized");
+      
+      final response = await _api.get('generate_employee_id&office_id=$officeId', token: token);
+      if (response['status'] == 'success') {
+        return response['data']?.toString();
+      }
+      return null;
+    } catch (e) {
+      debugPrint("Error generating employee ID: $e");
+      return null;
+    }
+  }
+
+  // 12. Helper: Get Lat/Lng from Address (Backend Proxy to Nominatim)
+  Future<Map<String, dynamic>?> getCoordinatesFromAddress(String address) async {
+    try {
+      final token = await SessionService.getToken();
+      if (token == null) return null;
+
+      final response = await _api.get('geocode_address&address=${Uri.encodeComponent(address)}', token: token);
+      
+      if (response['status'] == 'success') {
+        final data = response['data'];
+        return {
+          'lat': double.parse(data['lat'].toString()),
+          'lon': double.parse(data['lon'].toString()),
+        };
+      }
+      return null;
+    } catch (e) {
+      debugPrint("Geocoding proxy error: $e");
+      return null;
     }
   }
 }

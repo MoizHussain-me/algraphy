@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io';
-import '../views/registration_stepper_view.dart';
+import '../views/registration_form_view.dart';
 
 class AllEmployeesPage extends StatefulWidget {
   final UserModel currentUser;
@@ -418,7 +418,7 @@ color: isDark ? Colors.white : theme.textTheme.titleLarge?.color,
                                 backgroundColor: theme.scaffoldBackgroundColor,
                               ),
                               backgroundColor: theme.scaffoldBackgroundColor,
-                              body: RegistrationStepperView(userToEdit: user),
+                              body: RegistrationFormView(userToEdit: user),
                             ),
                           ),
                         ).then((_) => _fetchEmployees());
@@ -432,7 +432,7 @@ color: isDark ? Colors.white : theme.textTheme.titleLarge?.color,
                     }
                   },
                   itemBuilder: (_) => [
-                    if (kIsWeb)
+                    if (true) // Removed kIsWeb since new form works on mobile
                       PopupMenuItem(
                         value: 'edit',
                         child: Row(children: [

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:algraphy/modules/admin/data/repositories/admin_data_repository.dart';
 import 'package:algraphy/modules/auth/data/models/user_model.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class GeofenceManagementView extends StatefulWidget {
   const GeofenceManagementView({super.key});
@@ -42,59 +43,136 @@ class _GeofenceManagementViewState extends State<GeofenceManagementView> {
 
   void _showOfficeDialog([Map<String, dynamic>? office]) {
     final nameController = TextEditingController(text: office?['name']?.toString() ?? '');
+    final addressController = TextEditingController(text: office?['address']?.toString() ?? '');
+    final prefixController = TextEditingController(text: office?['employee_id_prefix']?.toString() ?? '');
     final latController = TextEditingController(text: office?['latitude']?.toString() ?? '');
     final lngController = TextEditingController(text: office?['longitude']?.toString() ?? '');
     final radiusController = TextEditingController(text: office?['radius']?.toString() ?? '100');
 
+    bool isGeocoding = false;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(office == null ? "Add Office Location" : "Edit Office Location"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: nameController, decoration: const InputDecoration(labelText: "Office Name", prefixIcon: Icon(Icons.business))),
-              TextField(controller: latController, decoration: const InputDecoration(labelText: "Latitude", prefixIcon: Icon(Icons.location_on)), keyboardType: TextInputType.number),
-              TextField(controller: lngController, decoration: const InputDecoration(labelText: "Longitude", prefixIcon: Icon(Icons.location_on)), keyboardType: TextInputType.number),
-              TextField(controller: radiusController, decoration: const InputDecoration(labelText: "Radius (Meters)", prefixIcon: Icon(Icons.radar)), keyboardType: TextInputType.number),
-            ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(office == null ? "Add Office Location" : "Edit Office Location"),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: nameController, decoration: const InputDecoration(labelText: "Office Name", prefixIcon: Icon(Icons.business))),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: addressController, 
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    labelText: "Address", 
+                    prefixIcon: const Icon(Icons.location_city),
+                    suffixIcon: isGeocoding 
+                      ? const SizedBox(width: 20, height: 20, child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2)))
+                      : IconButton(
+                          icon: const Icon(Icons.gps_fixed, color: Colors.blue),
+                          onPressed: () async {
+                            if (addressController.text.isEmpty) return;
+                            setDialogState(() => isGeocoding = true);
+                            try {
+                              final response = await GetIt.I<AdminRepository>().getCoordinatesFromAddress(addressController.text);
+                              if (response != null) {
+                                latController.text = response['lat'].toString();
+                                lngController.text = response['lon'].toString();
+                              } else {
+                                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("No coordinates found for this address. Try being more specific.")));
+                              }
+                            } catch (e) {
+                              if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Discovery error: $e")));
+                            } finally {
+                              setDialogState(() => isGeocoding = false);
+                            }
+                          },
+                        ),
+                    hintText: "Enter full address to fetch coordinates",
+                  )
+                ),
+                TextField(controller: prefixController, decoration: const InputDecoration(labelText: "Employee ID Prefix (e.g. JED)", prefixIcon: Icon(Icons.badge_outlined))),
+                TextField(controller: latController, decoration: const InputDecoration(labelText: "Latitude", prefixIcon: Icon(Icons.location_on)), keyboardType: TextInputType.number),
+                TextField(controller: lngController, decoration: const InputDecoration(labelText: "Longitude", prefixIcon: Icon(Icons.location_on)), keyboardType: TextInputType.number),
+                TextField(
+                  controller: radiusController, 
+                  decoration: const InputDecoration(labelText: "Radius (Meters Range)", prefixIcon: Icon(Icons.radar)), 
+                  keyboardType: TextInputType.number
+                ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: InkWell(
+                    onTap: () async {
+                      final addr = Uri.encodeComponent(addressController.text);
+                      final query = addr.isEmpty ? "NIB+Business+Tower+Jeddah" : addr;
+                      final url = Uri.parse("https://www.google.com/maps/search/$query");
+                      
+                      if (await canLaunchUrl(url)) {
+                        await launchUrl(url, mode: LaunchMode.externalApplication);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Tip: In Google Maps, Right-click on your building to see and copy the Lat/Lng!"),
+                              duration: Duration(seconds: 10),
+                            )
+                          );
+                        }
+                      } else {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text("Can't find it? Search on Google Maps to get Lat/Lng manually."),
+                              action: SnackBarAction(
+                                label: "Open Search",
+                                onPressed: () async {
+                                  if (await canLaunchUrl(url)) {
+                                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                                  }
+                                },
+                              ),
+                            )
+                          );
+                        }
+                      }
+                    },
+                    child: const Text(
+                      "Can't find coordinates? Click for help",
+                      style: TextStyle(color: Colors.blue, fontSize: 12, decoration: TextDecoration.underline),
+                    ),
+                  ),
+                )
+              ],
+            ),
           ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameController.text.isEmpty) return;
-              final data = {
-                if (office != null) 'id': office['id'],
-                'name': nameController.text,
-                'latitude': double.tryParse(latController.text) ?? 0,
-                'longitude': double.tryParse(lngController.text) ?? 0,
-                'radius': double.tryParse(radiusController.text) ?? 100,
-              };
-              try {
-                await GetIt.I<AdminRepository>().saveOffice(data);
-                if (mounted) Navigator.pop(context);
-                
-                // If it was a new office, ask if they want to assign employees now
-                if (office == null && mounted) {
-                  _loadData().then((_) {
-                    final newOffice = _offices.firstWhere((o) => o['name'] == data['name'], orElse: () => {});
-                    if (newOffice.isNotEmpty) {
-                      _showAssignmentSheet(newOffice);
-                    }
-                  });
-                } else {
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+            ElevatedButton(
+              onPressed: () async {
+                if (nameController.text.isEmpty) return;
+                final data = {
+                  if (office != null) 'id': office['id'],
+                  'name': nameController.text,
+                  'address': addressController.text,
+                  'employee_id_prefix': prefixController.text,
+                  'latitude': double.tryParse(latController.text) ?? 0,
+                  'longitude': double.tryParse(lngController.text) ?? 0,
+                  'radius': double.tryParse(radiusController.text) ?? 100,
+                };
+                try {
+                  await GetIt.I<AdminRepository>().saveOffice(data);
+                  if (mounted) Navigator.pop(context);
                   _loadData();
+                } catch (e) {
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
                 }
-              } catch (e) {
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
-              }
-            }, 
-            child: const Text("Save")
-          ),
-        ],
+              }, 
+              child: const Text("Save")
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -171,7 +249,22 @@ class _GeofenceManagementViewState extends State<GeofenceManagementView> {
                           child: const Icon(Icons.business_outlined, color: Colors.blue)
                         ),
                         title: Text(office['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-                        subtitle: Text("Lat: ${office['latitude']}, Lng: ${office['longitude']}\nRadius: ${office['radius']}m"),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (office['address'] != null && (office['address'] as String).isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                child: Text("Address: ${office['address']}", style: TextStyle(color: Colors.grey[400])),
+                              ),
+                            if (office['employee_id_prefix'] != null && (office['employee_id_prefix'] as String).isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 4),
+                                child: Text("ID Prefix: ${office['employee_id_prefix']}", style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.w500)),
+                              ),
+                            Text("Lat: ${office['latitude']}, Lng: ${office['longitude']}\nRadius: ${office['radius']}m"),
+                          ],
+                        ),
                         isThreeLine: true,
                         trailing: PopupMenuButton<String>(
                           onSelected: (val) {

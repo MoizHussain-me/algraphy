@@ -114,8 +114,7 @@ class AppRouter {
                 title: 'Employees',
                 currentRoute: AppRoutes.employees,
                 currentUser: user,
-                // Both can perform management tasks; 
-                // Stepper will still show 'Portal Only' on mobile.
+                // Both can perform management tasks on BOTH Mobile and Web.
                 body: EmployeeManagementPage(isAdmin: true, currentUser: user),
               );
             } else {
