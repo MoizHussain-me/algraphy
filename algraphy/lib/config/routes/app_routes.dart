@@ -20,6 +20,8 @@ class AppRoutes {
   static const signature = '/signature';
   static const tasks = '/tasks';
   static const privacyPolicy = '/privacy-policy';
-
-
+  static const departments = '/departments';
+  static const designations = '/designations';
+  static const shifts = '/shifts';
+  static const verifyEmail = '/verify-email';
 }

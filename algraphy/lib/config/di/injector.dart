@@ -2,6 +2,8 @@ import 'package:algraphy/modules/admin/data/repositories/admin_data_repository.d
 import 'package:algraphy/modules/auth/data/auth_repository.dart';
 import 'package:algraphy/modules/employee/data/employee_repository.dart';
 import 'package:algraphy/modules/tasks/data/repository/tasks_repository.dart';
+import 'package:algraphy/modules/chat/data/repositories/chat_repository.dart';
+
 import 'package:get_it/get_it.dart';
 
 final GetIt getIt = GetIt.instance;
@@ -12,4 +14,6 @@ Future<void> setup() async {
   getIt.registerLazySingleton(() => AdminRepository());
   getIt.registerLazySingleton<EmployeeRepository>(() => EmployeeRepository());
   getIt.registerLazySingleton<TasksRepository>(() => TasksRepository());
+  getIt.registerLazySingleton<ChatRepository>(() => ChatRepository());
+
 }

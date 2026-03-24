@@ -28,17 +28,79 @@ class _TeamAttendanceViewState extends State<TeamAttendanceView> {
   List<Map<String, dynamic>> _attendanceLogs = [];
   List<UserModel> _employees = [];
 
+  String _selectedFilter = 'All Time';
+  DateTime? _startDate;
+  DateTime? _endDate;
+
   @override
   void initState() {
     super.initState();
     _refreshData();
   }
 
+  void _onFilterChanged(String filter) async {
+    setState(() {
+      _selectedFilter = filter;
+    });
+
+    final now = DateTime.now();
+    if (filter == 'Today') {
+      _startDate = now;
+      _endDate = now;
+      _refreshData();
+    } else if (filter == 'This Week') {
+      int downToMonday = now.weekday - 1;
+      _startDate = now.subtract(Duration(days: downToMonday));
+      _endDate = now;
+      _refreshData();
+    } else if (filter == 'This Month') {
+      _startDate = DateTime(now.year, now.month, 1);
+      _endDate = now;
+      _refreshData();
+    } else if (filter == 'All Time') {
+      _startDate = null;
+      _endDate = null;
+      _refreshData();
+    } else if (filter == 'Custom') {
+      final picked = await showDateRangePicker(
+        context: context,
+        firstDate: DateTime(2000),
+        lastDate: now,
+      );
+      if (picked != null) {
+        _startDate = picked.start;
+        _endDate = picked.end;
+        _refreshData();
+      } else {
+        setState(() {
+          _selectedFilter = 'All Time';
+          _startDate = null;
+          _endDate = null;
+        });
+        _refreshData();
+      }
+    }
+  }
+
   Future<void> _refreshData() async {
     setState(() => _isLoading = true);
     try {
       final repo = GetIt.I<AdminRepository>();
-      final logs = await repo.getOrganizationAttendance(employeeId: widget.employeeId);
+      
+      String? startStr;
+      String? endStr;
+      if (_startDate != null) {
+        startStr = DateFormat('yyyy-MM-dd').format(_startDate!);
+      }
+      if (_endDate != null) {
+        endStr = DateFormat('yyyy-MM-dd').format(_endDate!);
+      }
+
+      final logs = await repo.getOrganizationAttendance(
+        employeeId: widget.employeeId,
+        startDate: startStr,
+        endDate: endStr,
+      );
       final employees = await repo.getAllEmployees();
 
       if (mounted) {
@@ -92,21 +154,35 @@ class _TeamAttendanceViewState extends State<TeamAttendanceView> {
               Row(
                 children: [
                   Expanded(
-                    child: RadioListTile<String>(
-                      title: Text("In", style: TextStyle(color: theme.textTheme.bodyMedium?.color, fontSize: 13)),
-                      value: 'clock_in',
-                      groupValue: markType,
-                      activeColor: theme.primaryColor,
-                      onChanged: (val) => setDialogState(() => markType = val!),
+                    child: GestureDetector(
+                      onTap: () => setDialogState(() => markType = 'clock_in'),
+                      child: Row(
+                        children: [
+                          Icon(
+                            markType == 'clock_in' ? Icons.check_box : Icons.check_box_outline_blank,
+                            color: markType == 'clock_in' ? theme.primaryColor : Colors.grey,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text("In", style: TextStyle(color: theme.textTheme.bodyMedium?.color, fontSize: 13)),
+                        ],
+                      ),
                     ),
                   ),
                   Expanded(
-                    child: RadioListTile<String>(
-                      title: Text("Out", style: TextStyle(color: theme.textTheme.bodyMedium?.color, fontSize: 13)),
-                      value: 'clock_out',
-                      groupValue: markType,
-                      activeColor: theme.primaryColor,
-                      onChanged: (val) => setDialogState(() => markType = val!),
+                    child: GestureDetector(
+                      onTap: () => setDialogState(() => markType = 'clock_out'),
+                      child: Row(
+                        children: [
+                          Icon(
+                            markType == 'clock_out' ? Icons.check_box : Icons.check_box_outline_blank,
+                            color: markType == 'clock_out' ? theme.primaryColor : Colors.grey,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text("Out", style: TextStyle(color: theme.textTheme.bodyMedium?.color, fontSize: 13)),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -173,9 +249,13 @@ class _TeamAttendanceViewState extends State<TeamAttendanceView> {
               icon: const Icon(Icons.edit_calendar, color: Colors.white),
               label: const Text("Manual Mark", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
-      body: RefreshIndicator(
-        onRefresh: _refreshData,
-        color: theme.primaryColor,
+      body: Column(
+        children: [
+          _buildFilterChips(theme),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _refreshData,
+              color: theme.primaryColor,
         child: _attendanceLogs.isEmpty
             ? Center(
                 child: Column(
@@ -278,7 +358,7 @@ class _TeamAttendanceViewState extends State<TeamAttendanceView> {
                                           children: [
                                             _timeInfo(context, "IN", clockIn, Colors.green),
                                             const SizedBox(width: 20),
-                                            _timeInfo(context, "OUT", clockOut, Colors.orange),
+                                            _timeInfo(context, "OUT", clockOut, const Color(0xFFDC2726)),
                                           ],
                                         ),
                                         Column(
@@ -301,6 +381,9 @@ class _TeamAttendanceViewState extends State<TeamAttendanceView> {
                   );
                 },
               ),
+            ),
+          ),
+        ],
       ),
     );
 
@@ -313,6 +396,38 @@ class _TeamAttendanceViewState extends State<TeamAttendanceView> {
       );
     }
     return mainContent;
+  }
+
+  Widget _buildFilterChips(ThemeData theme) {
+    final filters = ['All Time', 'Today', 'This Week', 'This Month', 'Custom'];
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: filters.map((f) {
+            final isSelected = _selectedFilter == f;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: ChoiceChip(
+                label: Text(f),
+                selected: isSelected,
+                onSelected: (selected) {
+                  if (selected && _selectedFilter != f) {
+                    _onFilterChanged(f);
+                  }
+                },
+                selectedColor: theme.primaryColor.withOpacity(0.2),
+                labelStyle: TextStyle(
+                  color: isSelected ? theme.primaryColor : Colors.grey,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
   }
 
   Widget _timeInfo(BuildContext context, String label, String time, Color color) {

@@ -42,8 +42,9 @@ class UserModel {
 
   // -- WORK --
   final String? department;
-  final String? location;
+  final String? departmentId;
   final String? designation;
+  final String? designationId;
   final String? dateOfJoining;
   final String? employmentType;
   final String? employeeStatus;
@@ -52,6 +53,8 @@ class UserModel {
   final String? totalExperience;
   final String? jobDescription;
   final String? subJobDescription;
+  final String? shiftId;
+  final String? shiftName;
 
   // -- CLIENT SPECIFIC --
   final String? companyName;
@@ -78,9 +81,10 @@ class UserModel {
     this.dateOfBirth, this.gender, this.maritalStatus, this.aboutMe, this.expertise,
     this.workPhoneNumber, this.extension, this.personalMobileNumber, this.personalEmailAddress,
     this.seatingLocation, this.presentAddress, this.permanentAddress,
-    this.department, this.location, this.designation, this.dateOfJoining,
+    this.department, this.departmentId, this.designation, this.designationId, this.dateOfJoining,
     this.employmentType, this.employeeStatus, this.sourceOfHire,
     this.currentExperience, this.totalExperience, this.jobDescription, this.subJobDescription,
+    this.shiftId, this.shiftName,
     this.reportingManager, this.reportingManagerName, this.secondaryReportingManager, this.secondaryReportingManagerName,
     this.companyName, this.industry, this.servicesNeeded,
     this.officeId, this.officeName,
@@ -162,13 +166,16 @@ class UserModel {
       permanentAddress: m['permanent_address'],
       dateOfJoining: m['date_of_joining'], 
       department: m['department'], 
-      location: m['location'], 
+      departmentId: m['department_id']?.toString(),
       designation: m['designation'],
+      designationId: m['designation_id']?.toString(),
       employmentType: m['employment_type'], 
       employeeStatus: m['employee_status'],
       sourceOfHire: m['source_of_hire'], 
       currentExperience: m['current_experience']?.toString(), 
       totalExperience: m['total_experience']?.toString(),
+      shiftId: m['shift_id']?.toString(),
+      shiftName: m['shift_name'],
       reportingManager: m['reporting_manager_id']?.toString(),
       reportingManagerName: m['reporting_manager_name'],
       secondaryReportingManager: m['secondary_reporting_manager_id']?.toString(),
@@ -221,8 +228,13 @@ class UserModel {
 
       // WORK INFO
       'department': department,
-      'location': location,
+      'departmentId': departmentId,
+      'department_id': departmentId,
       'designation': designation,
+      'designationId': designationId,
+      'designation_id': designationId,
+      'shift_id': shiftId,
+      'shiftId': shiftId,
       'date_of_joining': dateOfJoining,
       'dateOfJoining': dateOfJoining,
       'employment_type': employmentType,
@@ -315,8 +327,10 @@ class UserModel {
     String? presentAddress,
     String? permanentAddress,
     String? department,
+    String? departmentId,
     String? location,
     String? designation,
+    String? designationId,
     String? dateOfJoining,
     String? employmentType,
     String? employeeStatus,
@@ -325,6 +339,8 @@ class UserModel {
     String? totalExperience,
     String? jobDescription,
     String? subJobDescription,
+    String? shiftId,
+    String? shiftName,
     String? reportingManager,
     String? reportingManagerName,
     String? secondaryReportingManager,
@@ -366,8 +382,9 @@ class UserModel {
       presentAddress: presentAddress ?? this.presentAddress,
       permanentAddress: permanentAddress ?? this.permanentAddress,
       department: department ?? this.department,
-      location: location ?? this.location,
+      departmentId: departmentId ?? this.departmentId,
       designation: designation ?? this.designation,
+      designationId: designationId ?? this.designationId,
       dateOfJoining: dateOfJoining ?? this.dateOfJoining,
       employmentType: employmentType ?? this.employmentType,
       employeeStatus: employeeStatus ?? this.employeeStatus,
@@ -376,6 +393,8 @@ class UserModel {
       totalExperience: totalExperience ?? this.totalExperience,
       jobDescription: jobDescription ?? this.jobDescription,
       subJobDescription: subJobDescription ?? this.subJobDescription,
+      shiftId: shiftId ?? this.shiftId,
+      shiftName: shiftName ?? this.shiftName,
       reportingManager: reportingManager ?? this.reportingManager,
       reportingManagerName: reportingManagerName ?? this.reportingManagerName,
       secondaryReportingManager: secondaryReportingManager ?? this.secondaryReportingManager,

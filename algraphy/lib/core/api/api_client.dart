@@ -134,6 +134,7 @@ class ApiClient {
       final response = await http.Response.fromStream(streamedResponse);
       return _handleResponse(response);
     } catch (e) {
+      debugPrint("DEBUG: postMultipart Error: $e");
       throw Exception("Upload Error: $e");
     }
   }

@@ -62,14 +62,15 @@ class AdminRepository {
   }
 
   // 3. Fetch Departments
-  Future<List<String>> getDepartments() async {
+  Future<List<Map<String, dynamic>>> getDepartments() async {
     try {
       final token = await SessionService.getToken();
       if (token == null) throw Exception("Unauthorized");
 
       final response = await _api.get('get_departments', token: token);
       if (response['status'] == 'success') {
-        return List<String>.from(response['data'] ?? []);
+        // Return full list of department objects (id, name, etc.)
+        return List<Map<String, dynamic>>.from(response['data'] ?? []);
       }
       return [];
     } catch (e) {
@@ -174,14 +175,20 @@ class AdminRepository {
   }
 
   // 6. Organization Attendance Logs
-  Future<List<Map<String, dynamic>>> getOrganizationAttendance({String? employeeId}) async {
+  Future<List<Map<String, dynamic>>> getOrganizationAttendance({
+    String? employeeId,
+    String? startDate,
+    String? endDate,
+  }) async {
     try {
       final token = await SessionService.getToken();
       if (token == null) throw Exception("Unauthorized");
 
-      final url = employeeId != null 
-          ? 'org_attendance_logs&employee_id=$employeeId' 
-          : 'org_attendance_logs';
+      String url = 'org_attendance_logs';
+      if (employeeId != null) url += '&employee_id=$employeeId';
+      if (startDate != null && endDate != null) {
+        url += '&start_date=$startDate&end_date=$endDate';
+      }
 
       final response = await _api.get(url, token: token);
       if (response['status'] == 'success') {
@@ -351,7 +358,6 @@ class AdminRepository {
     }
   }
 
-  // 12. Helper: Get Lat/Lng from Address (Backend Proxy to Nominatim)
   Future<Map<String, dynamic>?> getCoordinatesFromAddress(String address) async {
     try {
       final token = await SessionService.getToken();
@@ -370,6 +376,38 @@ class AdminRepository {
     } catch (e) {
       debugPrint("Geocoding proxy error: $e");
       return null;
+    }
+  }
+
+  // 13. Fetch Designations (for onboarding dropdown)
+  Future<List<Map<String, dynamic>>> getDesignationsList() async {
+    try {
+      final token = await SessionService.getToken();
+      if (token == null) return [];
+      final response = await _api.get('get_designations', token: token);
+      if (response['status'] == 'success') {
+        return List<Map<String, dynamic>>.from(response['data'] ?? []);
+      }
+      return [];
+    } catch (e) {
+      debugPrint("Error fetching designations: $e");
+      return [];
+    }
+  }
+
+  // 14. Fetch Shifts (for onboarding dropdown)
+  Future<List<Map<String, dynamic>>> getShiftsList() async {
+    try {
+      final token = await SessionService.getToken();
+      if (token == null) return [];
+      final response = await _api.get('get_shifts', token: token);
+      if (response['status'] == 'success') {
+        return List<Map<String, dynamic>>.from(response['data'] ?? []);
+      }
+      return [];
+    } catch (e) {
+      debugPrint("Error fetching shifts: $e");
+      return [];
     }
   }
 }

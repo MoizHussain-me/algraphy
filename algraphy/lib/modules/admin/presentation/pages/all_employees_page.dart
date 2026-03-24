@@ -78,7 +78,7 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
       title: '$action Account',
       message: 'Are you sure you want to $action ${user.fullName}\'s account?',
       confirmLabel: action,
-      confirmColor: currentlyActive ? Colors.orange : Colors.green,
+      confirmColor: currentlyActive ? Color(0xFFDC2726) : Colors.green,
     );
     if (!confirmed) return;
 
@@ -87,7 +87,7 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('${user.fullName} has been ${action.toLowerCase()}d.'),
-          backgroundColor: currentlyActive ? Colors.orange : Colors.green,
+          backgroundColor: currentlyActive ? Color(0xFFDC2726) : Colors.green,
         ));
         _fetchEmployees();
       }
@@ -286,7 +286,7 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
         side: BorderSide(
           color: isActive
               ? theme.dividerColor.withOpacity(isDark ? 0.08 : 0.1)
-              : Colors.orange.withValues(alpha: 0.3),
+              : Color(0xFFDC2726).withValues(alpha: 0.3),
         ),
       ),
       child: InkWell(
@@ -335,7 +335,7 @@ class _AllEmployeesPageState extends State<AllEmployeesPage> {
                         width: 14,
                         height: 14,
                         decoration: BoxDecoration(
-                          color: Colors.orange,
+                          color: Color(0xFFDC2726),
                           shape: BoxShape.circle,
                           border: Border.all(color: theme.cardColor, width: 2),
                         ),
@@ -368,13 +368,13 @@ color: isDark ? Colors.white : theme.textTheme.titleLarge?.color,
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: Colors.orange.withValues(alpha: 0.15),
+                              color: Color(0xFFDC2726).withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+                              border: Border.all(color: Color(0xFFDC2726).withValues(alpha: 0.4)),
                             ),
                             child: const Text(
                               'Disabled',
-                              style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold),
+                              style: TextStyle(color: Color(0xFFDC2726), fontSize: 10, fontWeight: FontWeight.bold),
                             ),
                           ),
                       ],
@@ -445,14 +445,14 @@ color: isDark ? Colors.white : theme.textTheme.titleLarge?.color,
                       value: 'toggle',
                       child: Row(children: [
                         Icon(
-                          isActive ? Icons.block : Icons.check_circle_outline,
-                          color: isActive ? Colors.orange : Colors.green,
+                          isActive ? Icons.block : Icons.check_box,
+                          color: isActive ? Color(0xFFDC2726) : Colors.green,
                           size: 18,
                         ),
                         const SizedBox(width: 10),
                         Text(
                           isActive ? 'Disable Account' : 'Enable Account',
-                          style: TextStyle(color: isActive ? Colors.orange : Colors.green),
+                          style: TextStyle(color: isActive ? Color(0xFFDC2726) : Colors.green),
                         ),
                       ]),
                     ),
@@ -477,10 +477,6 @@ color: isDark ? Colors.white : theme.textTheme.titleLarge?.color,
   }
 
   ImageProvider? _getProfileImage(String? path) {
-    if (path == null || path.isEmpty) return null;
-    if (path.startsWith('http')) return NetworkImage(path);
-    if (!kIsWeb) return FileImage(File(path));
-    final fullUrl = ImageHelper.getFullUrl(path);
-    return NetworkImage(fullUrl);
+    return ImageHelper.getProvider(path);
   }
 }

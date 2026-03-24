@@ -1,4 +1,5 @@
 import 'package:algraphy/modules/employee/data/employee_repository.dart';
+import 'package:algraphy/modules/employee/presentation/views/leave_details_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
@@ -127,53 +128,62 @@ class _MyLeavesViewState extends State<MyLeavesView> {
             elevation: theme.cardTheme.elevation,
             margin: const EdgeInsets.only(bottom: 12),
             shape: theme.cardTheme.shape,
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              title: Text(
-                req['leave_type'] ?? 'General', 
-                style: TextStyle(
-                  color: theme.textTheme.bodyLarge?.color, 
-                  fontWeight: FontWeight.bold
-                )
-              ),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "${req['start_date']} to ${req['end_date']} • ${req['days_count']} Days", 
-                      style: TextStyle(
-                        color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7), 
-                        fontSize: 12
-                      )
-                    ),
-                    if (req['reason'] != null && req['reason'].toString().isNotEmpty)
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => LeaveDetailsView(request: req, isManagerView: false)),
+                );
+              },
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                title: Text(
+                  req['leave_type'] ?? 'General', 
+                  style: TextStyle(
+                    color: theme.textTheme.bodyLarge?.color, 
+                    fontWeight: FontWeight.bold
+                  )
+                ),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        "Reason: ${req['reason']}", 
+                        "${req['start_date']} to ${req['end_date']} • ${req['days_count']} Days", 
                         style: TextStyle(
-                          color: theme.textTheme.bodySmall?.color?.withOpacity(0.5), 
-                          fontSize: 12, 
-                          fontStyle: FontStyle.italic
+                          color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7), 
+                          fontSize: 12
                         )
                       ),
-                  ],
+                      if (req['reason'] != null && req['reason'].toString().isNotEmpty)
+                        Text(
+                          "Reason: ${req['reason']}", 
+                          style: TextStyle(
+                            color: theme.textTheme.bodySmall?.color?.withOpacity(0.5), 
+                            fontSize: 12, 
+                            fontStyle: FontStyle.italic
+                          )
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: _getStatusColor(req['status'] ?? 'Pending').withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: _getStatusColor(req['status'] ?? 'Pending').withOpacity(0.5)),
-                ),
-                child: Text(
-                  req['status'] ?? 'Pending', 
-                  style: TextStyle(
-                    color: _getStatusColor(req['status'] ?? 'Pending'), 
-                    fontWeight: FontWeight.bold, 
-                    fontSize: 12
-                  )
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(req['status'] ?? 'Pending').withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: _getStatusColor(req['status'] ?? 'Pending').withOpacity(0.5)),
+                  ),
+                  child: Text(
+                    req['status'] ?? 'Pending', 
+                    style: TextStyle(
+                      color: _getStatusColor(req['status'] ?? 'Pending'), 
+                      fontWeight: FontWeight.bold, 
+                      fontSize: 12
+                    )
+                  ),
                 ),
               ),
             ),

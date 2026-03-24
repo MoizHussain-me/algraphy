@@ -243,7 +243,7 @@ class _CreateSignatureRequestViewState extends State<CreateSignatureRequestView>
                         ),
                       ),
                     ),
-                    if (_selectedFile != null) const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                    if (_selectedFile != null) const Icon(Icons.check_box, color: Colors.green, size: 20),
                   ],
                 ),
               ),

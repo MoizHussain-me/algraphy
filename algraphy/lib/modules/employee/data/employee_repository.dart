@@ -58,11 +58,19 @@ class EmployeeRepository {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getAttendanceHistory() async {
+  Future<List<Map<String, dynamic>>> getAttendanceHistory({
+    String? startDate,
+    String? endDate,
+  }) async {
     final token = await SessionService.getToken();
     if (token == null) throw Exception("Not authenticated");
 
-    final response = await _api.get('my_attendance_history', token: token);
+    String url = 'my_attendance_history';
+    if (startDate != null && endDate != null) {
+      url += '&start_date=$startDate&end_date=$endDate';
+    }
+
+    final response = await _api.get(url, token: token);
 
     if (response['status'] == 'success') {
       return List<Map<String, dynamic>>.from(response['data']);

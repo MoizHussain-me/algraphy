@@ -104,7 +104,7 @@ class _DashboardViewState extends State<DashboardView> {
         _buildGrid([
           _MetricCard(title: "Hours This Week", value: _hoursThisWeek, trend: "Target: 40h", icon: Icons.access_time_filled, iconColor: const Color(0xFF7C4DFF)),
           _MetricCard(title: "Days Present", value: _daysPresent, trend: "This Month", icon: Icons.calendar_today, iconColor: const Color(0xFF00BFA5)),
-          const _MetricCard(title: "Attendance Rate", value: "100%", trend: "On Track", icon: Icons.show_chart, iconColor: Color(0xFFFF9100)),
+          const _MetricCard(title: "Attendance Rate", value: "100%", trend: "On Track", icon: Icons.show_chart, iconColor: Color(0xFFDC2726)),
           const _MetricCard(title: "Leave Balance", value: "14", trend: "Annual", icon: Icons.beach_access, iconColor: Color(0xFFE91E63)),
         ]),
         const SizedBox(height: 24),
@@ -140,7 +140,7 @@ class _DashboardViewState extends State<DashboardView> {
         _buildGrid([
           _MetricCard(title: "Total Employees", value: _totalEmployees, trend: "+3 New", icon: Icons.people_alt, iconColor: Colors.blueAccent),
           _MetricCard(title: "On Duty Today", value: _onDutyNow, trend: "83% Active", icon: Icons.badge, iconColor: Colors.greenAccent),
-          _MetricCard(title: "On Leave", value: _onLeave, trend: "Approved", icon: Icons.flight_takeoff, iconColor: Colors.orangeAccent),
+          _MetricCard(title: "On Leave", value: _onLeave, trend: "Approved", icon: Icons.flight_takeoff, iconColor: const Color(0xFFDC2726)),
           _MetricCard(title: "Late Arrivals", value: _lateArrivals, trend: "Needs Review", icon: Icons.timer_off, iconColor: Colors.redAccent),
         ]),
         const SizedBox(height: 24),

@@ -186,7 +186,7 @@ class _DocumentManagementPageState extends State<DocumentManagementPage> {
                         Text(
                           "Status: ${isExpired ? 'Expired' : doc.status}", 
                           style: TextStyle(
-                            color: isSigned ? Colors.green : (isExpired ? Colors.red : Colors.orange), 
+                            color: isSigned ? Colors.green : (isExpired ? Colors.red : const Color(0xFFDC2726)), 
                             fontSize: 12,
                             fontWeight: FontWeight.w600
                           )

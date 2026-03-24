@@ -45,8 +45,9 @@ class _GeofenceManagementViewState extends State<GeofenceManagementView> {
     final nameController = TextEditingController(text: office?['name']?.toString() ?? '');
     final addressController = TextEditingController(text: office?['address']?.toString() ?? '');
     final prefixController = TextEditingController(text: office?['employee_id_prefix']?.toString() ?? '');
-    final latController = TextEditingController(text: office?['latitude']?.toString() ?? '');
-    final lngController = TextEditingController(text: office?['longitude']?.toString() ?? '');
+    final coordinatesController = TextEditingController(
+      text: office != null ? "${office['latitude']}, ${office['longitude']}" : ""
+    );
     final radiusController = TextEditingController(text: office?['radius']?.toString() ?? '100');
 
     bool isGeocoding = false;
@@ -55,7 +56,7 @@ class _GeofenceManagementViewState extends State<GeofenceManagementView> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: Text(office == null ? "Add Office Location" : "Edit Office Location"),
+          title: Text(office == null ? "Add Office Location" : "Edit Office Location", style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[300] : Colors.grey[700], fontSize: 13)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -78,8 +79,7 @@ class _GeofenceManagementViewState extends State<GeofenceManagementView> {
                             try {
                               final response = await GetIt.I<AdminRepository>().getCoordinatesFromAddress(addressController.text);
                               if (response != null) {
-                                latController.text = response['lat'].toString();
-                                lngController.text = response['lon'].toString();
+                                coordinatesController.text = "${response['lat']}, ${response['lon']}";
                               } else {
                                 if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("No coordinates found for this address. Try being more specific.")));
                               }
@@ -94,8 +94,14 @@ class _GeofenceManagementViewState extends State<GeofenceManagementView> {
                   )
                 ),
                 TextField(controller: prefixController, decoration: const InputDecoration(labelText: "Employee ID Prefix (e.g. JED)", prefixIcon: Icon(Icons.badge_outlined))),
-                TextField(controller: latController, decoration: const InputDecoration(labelText: "Latitude", prefixIcon: Icon(Icons.location_on)), keyboardType: TextInputType.number),
-                TextField(controller: lngController, decoration: const InputDecoration(labelText: "Longitude", prefixIcon: Icon(Icons.location_on)), keyboardType: TextInputType.number),
+                TextField(
+                  controller: coordinatesController, 
+                  decoration: const InputDecoration(
+                    labelText: "Coordinates (Lat, Lng)", 
+                    prefixIcon: Icon(Icons.location_on),
+                    hintText: "e.g. 24.123, 45.123"
+                  )
+                ),
                 TextField(
                   controller: radiusController, 
                   decoration: const InputDecoration(labelText: "Radius (Meters Range)", prefixIcon: Icon(Icons.radar)), 
@@ -152,13 +158,24 @@ class _GeofenceManagementViewState extends State<GeofenceManagementView> {
             ElevatedButton(
               onPressed: () async {
                 if (nameController.text.isEmpty) return;
+                double lat = 0;
+                double lng = 0;
+                final coordText = coordinatesController.text.trim();
+                if (coordText.contains(',')) {
+                  final parts = coordText.split(',');
+                  if (parts.length >= 2) {
+                    lat = double.tryParse(parts[0].trim()) ?? 0;
+                    lng = double.tryParse(parts[1].trim()) ?? 0;
+                  }
+                }
+
                 final data = {
                   if (office != null) 'id': office['id'],
                   'name': nameController.text,
                   'address': addressController.text,
                   'employee_id_prefix': prefixController.text,
-                  'latitude': double.tryParse(latController.text) ?? 0,
-                  'longitude': double.tryParse(lngController.text) ?? 0,
+                  'latitude': lat,
+                  'longitude': lng,
                   'radius': double.tryParse(radiusController.text) ?? 100,
                 };
                 try {
@@ -387,7 +404,7 @@ class _AssignEmployeesSheetState extends State<_AssignEmployeesSheet> {
                     isOtherOffice 
                       ? "Currently at: ${emp.officeName}" 
                       : (isCurrentOffice ? "Already assigned" : "Not assigned"),
-                    style: TextStyle(fontSize: 12, color: isOtherOffice ? Colors.orange : (isCurrentOffice ? Colors.green : Colors.grey)),
+                    style: TextStyle(fontSize: 12, color: isOtherOffice ? const Color(0xFFDC2726) : (isCurrentOffice ? Colors.green : Colors.grey)),
                   ),
                   onChanged: (val) {
                     setState(() {

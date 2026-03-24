@@ -15,6 +15,10 @@ import 'core/theme/app_theme.dart';
 import 'modules/auth/presentation/bloc/auth_bloc.dart';
 import 'modules/auth/presentation/bloc/auth_state.dart';
 import 'modules/auth/presentation/bloc/auth_event.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
+import 'core/services/notification_service.dart';
 
 // Pages
 import 'modules/employee/presentation/pages/attendance_page.dart'; 
@@ -24,8 +28,29 @@ import 'modules/client/presentation/pages/client_dashboard_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await setup(); 
+  
+  try {
+    if (kIsWeb) {
+      await Firebase.initializeApp(
+        options: const FirebaseOptions(
+          apiKey: "AIzaSyCq31TfSN_aa9YkfCQ8JHXFC5F9iPXwKZI",
+          authDomain: "al-graphy-pro.firebaseapp.com",
+          projectId: "al-graphy-pro",
+          storageBucket: "al-graphy-pro.firebasestorage.app",
+          messagingSenderId: "620504539920",
+          appId: "1:620504539920:web:f0ae5c4b8c208d93bbbb95",
+        ),
+      );
+    } else {
+      await Firebase.initializeApp();
+    }
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    await NotificationService().initialize();
+  } catch (e) {
+    debugPrint("Firebase initialization failed: $e");
+  }
 
+  await setup(); 
   runApp(const MyApp());
 }
 

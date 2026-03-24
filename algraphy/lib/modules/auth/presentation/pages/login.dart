@@ -165,7 +165,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
         const SizedBox(height: 24),
-        Text('Algraphy Pro', style: theme.textTheme.displayLarge),
+        Text('AlGraphy Pro', style: theme.textTheme.displayLarge),
         const SizedBox(height: 8),
         Text(
           _isClientSignup ? 'Create your client account' : 'Sign in to your account',
@@ -295,7 +295,7 @@ class _LoginPageState extends State<LoginPage> {
         text: TextSpan(
           style: const TextStyle(fontSize: 14, color: Colors.grey),
           children: [
-            TextSpan(text: _isClientSignup ? 'Already a Client? ' : 'New to Algraphy Pro? '),
+            TextSpan(text: _isClientSignup ? 'Already a Client? ' : 'New to AlGraphy Pro? '),
             const TextSpan(text: 'Click here', style: TextStyle(color: Color(0xFFDC2726), fontWeight: FontWeight.bold)),
           ],
         ),

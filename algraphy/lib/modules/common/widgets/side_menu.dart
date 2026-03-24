@@ -139,13 +139,13 @@ class SideMenu extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   children: [
                     // --- Main Core (Visible to All) ---
-                    _buildMenuItem(context, icon: Icons.dashboard, label: 'Algraphy Pro', routeName: AppRoutes.home),
+                    _buildMenuItem(context, icon: Icons.dashboard, label: 'AlGraphy Pro', routeName: AppRoutes.home),
                     _buildMenuItem(context, icon: Icons.task_alt, label: 'Tasks', routeName: AppRoutes.tasks),
                     
                     if (currentUser.role != 'client') ...[
                       //const Divider(color: Colors.white10),
                       // --- Organization / Modules (Internal Only) ---
-                      // _buildMenuItem(context, icon: Icons.chat, label: 'Chats', routeName: AppRoutes.chats),
+                      _buildMenuItem(context, icon: Icons.chat, label: 'Chats', routeName: AppRoutes.chats),
                       // _buildMenuItem(context, icon: Icons.work, label: 'Work', routeName: AppRoutes.work),
                       // _buildMenuItem(context, icon: Icons.article, label: 'Plans', routeName: AppRoutes.plans),
                       // _buildMenuItem(context, icon: Icons.emoji_people, label: 'Talents', routeName: AppRoutes.talents),
@@ -167,6 +167,9 @@ class SideMenu extends StatelessWidget {
                         child: Text("ADMINISTRATION", style: Theme.of(context).textTheme.labelSmall),
                       ),
                       _buildMenuItem(context, icon: Icons.person_add, label: 'Employees', routeName: AppRoutes.employees),
+                      _buildMenuItem(context, icon: Icons.business, label: 'Departments', routeName: AppRoutes.departments),
+                      _buildMenuItem(context, icon: Icons.badge, label: 'Designations', routeName: AppRoutes.designations),
+                      _buildMenuItem(context, icon: Icons.access_time, label: 'Working Shifts', routeName: AppRoutes.shifts),
                     ],
                   ],
                 ),

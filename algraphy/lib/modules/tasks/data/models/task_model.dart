@@ -112,6 +112,13 @@ class TaskModel {
 
   bool get isCompleted => status == 'completed';
 
+  int get completedSubtasksCount => subtasks.where((s) => s.isCompleted).length;
+
+  double get progress {
+    if (subtasks.isEmpty) return isCompleted ? 1.0 : 0.0;
+    return completedSubtasksCount / subtasks.length;
+  }
+
   factory TaskModel.fromMap(Map<String, dynamic> map) {
     return TaskModel(
       id: map['task_id']?.toString() ?? '',

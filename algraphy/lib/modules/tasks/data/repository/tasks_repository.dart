@@ -133,4 +133,15 @@ class TasksRepository {
       throw Exception(response['message'] ?? 'Failed to remove attachment');
     }
   }
+
+  Future<void> updateTaskPriority(String taskId, String priority) async {
+    final token = await SessionService.getToken();
+    final response = await _api.post('update_task', {
+      'task_id': taskId,
+      'priority': priority,
+    }, token: token);
+    if (response['status'] != 'success') {
+      throw Exception(response['message'] ?? 'Failed to update task priority');
+    }
+  }
 }

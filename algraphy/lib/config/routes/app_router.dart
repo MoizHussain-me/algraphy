@@ -1,4 +1,7 @@
 import 'package:algraphy/modules/admin/presentation/pages/employee_management_page.dart';
+import 'package:algraphy/modules/admin/presentation/pages/departments_page.dart';
+import 'package:algraphy/modules/admin/presentation/pages/designations_page.dart';
+import 'package:algraphy/modules/admin/presentation/pages/shifts_page.dart';
 import 'package:algraphy/modules/auth/presentation/bloc/auth_state.dart';
 import 'package:algraphy/modules/auth/presentation/pages/login.dart';
 import 'package:algraphy/modules/employee/presentation/pages/attendance_history.dart';
@@ -8,6 +11,8 @@ import 'package:algraphy/modules/signature/presentation/bloc/signature_bloc.dart
 import 'package:algraphy/modules/signature/presentation/pages/signature_view_page.dart';
 import 'package:algraphy/modules/tasks/presentation/pages/tasks_page.dart';
 import 'package:algraphy/core/theme/typography.dart';
+import 'package:algraphy/modules/auth/presentation/pages/verify_email_page.dart';
+import 'package:algraphy/modules/chat/presentation/pages/chat_list_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/foundation.dart' show kIsWeb; // Key for Platform check
@@ -22,7 +27,14 @@ import 'app_routes.dart';
 
 class AppRouter {
   static Route<dynamic> generate(RouteSettings settings) {
-    switch (settings.name) {
+    if (settings.name == null) return _errorRoute();
+
+    // Parse URL for Web (e.g. /verify-email?token=xyz)
+    final uri = Uri.parse(settings.name!);
+    final queryParams = uri.queryParameters;
+    final path = uri.path;
+
+    switch (path) {
       // -----------------------------------------------------------------------
       // HOME (Default Dashboard - usually Attendance)
       // -----------------------------------------------------------------------
@@ -157,36 +169,85 @@ class AppRouter {
           ),
         );
 
+      case AppRoutes.departments:
+        return _buildProtectedPage(
+          settings: settings,
+          builder: (user) {
+            if (user.role == 'admin' || user.role == 'manager') {
+              return MainScaffold(
+                title: 'Departments',
+                currentRoute: AppRoutes.departments,
+                currentUser: user,
+                body: const DepartmentsPage(),
+              );
+            }
+            return _buildAccessDenied(user, AppRoutes.departments);
+          },
+        );
+
+      case AppRoutes.designations:
+        return _buildProtectedPage(
+          settings: settings,
+          builder: (user) {
+            if (user.role == 'admin' || user.role == 'manager') {
+              return MainScaffold(
+                title: 'Designations',
+                currentRoute: AppRoutes.designations,
+                currentUser: user,
+                body: const DesignationsPage(),
+              );
+            }
+            return _buildAccessDenied(user, AppRoutes.designations);
+          },
+        );
+
+      case AppRoutes.shifts:
+        return _buildProtectedPage(
+          settings: settings,
+          builder: (user) {
+            if (user.role == 'admin' || user.role == 'manager') {
+              return MainScaffold(
+                title: 'Working Shifts',
+                currentRoute: AppRoutes.shifts,
+                currentUser: user,
+                body: const ShiftsPage(),
+              );
+            }
+            return _buildAccessDenied(user, AppRoutes.shifts);
+          },
+        );
+
       case AppRoutes.chats:
-      case AppRoutes.settings:
-      case AppRoutes.algraphyPro:
-      case AppRoutes.about:
-      case AppRoutes.services:
-      case AppRoutes.work:
-      case AppRoutes.plans:
-      case AppRoutes.talents:
-      case AppRoutes.contact:
-      case AppRoutes.privacyPolicy:
         return _buildProtectedPage(
           settings: settings,
           builder: (user) => MainScaffold(
-            title: _getTitleFromRoute(settings.name),
-            currentRoute: settings.name ?? '',
+            title: 'Chats',
+            currentRoute: AppRoutes.chats,
             currentUser: user,
-            body: ComingSoonPage(title: _getTitleFromRoute(settings.name)),
+            body: const ChatListPage(),
           ),
         );
 
+      case AppRoutes.settings:
+
       // Inside AppRouter.dart
       case AppRoutes.signature:
+      case '/signature':
         // Extract token from settings.arguments or URL parameters
-        final String token = settings.arguments as String? ?? "";
+        final String token = (settings.arguments as String?) ?? queryParams['token'] ?? "";
 
         return MaterialPageRoute(
           builder: (_) => BlocProvider(
             create: (context) => SignatureBloc(SignatureRepository()),
             child: SignatureViewPage(token: token),
           ),
+        );
+
+      case AppRoutes.verifyEmail:
+      case '/verify':
+        final String verifyToken = (settings.arguments as String?) ?? queryParams['token'] ?? "";
+        return MaterialPageRoute(
+          builder: (_) => VerifyEmailPage(token: verifyToken),
         );
 
       // -----------------------------------------------------------------------
@@ -231,5 +292,40 @@ class AppRouter {
     if (route == null) return '';
     // Removes slash and creates a clean title (e.g., "/about" -> "ABOUT")
     return route.replaceAll('/', '').toUpperCase();
+  }
+
+  // --- Helper for Access Denied screen ---
+  static Widget _buildAccessDenied(UserModel user, String route) {
+    return MainScaffold(
+      title: 'Access Denied',
+      currentRoute: route,
+      currentUser: user,
+      body: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.lock_outline, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              "Access Restricted",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text(
+              "This section is only available to Administrators.",
+              style: TextStyle(color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Route<dynamic> _errorRoute() {
+    return MaterialPageRoute(
+      builder: (_) => const Scaffold(
+        body: Center(child: Text('Route not found')),
+      ),
+    );
   }
 }

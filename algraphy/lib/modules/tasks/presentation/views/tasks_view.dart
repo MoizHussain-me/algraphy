@@ -5,6 +5,7 @@ import 'package:algraphy/modules/tasks/presentation/views/task_details_view.dart
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
+import 'package:algraphy/core/theme/colors.dart';
 
 class TasksView extends StatefulWidget {
   const TasksView({super.key});
@@ -70,7 +71,7 @@ class _TasksViewState extends State<TasksView> with SingleTickerProviderStateMix
         _buildTabBar(),
         Expanded(
           child: _isLoading 
-            ? const Center(child: CircularProgressIndicator(color: Color(0xFFDC2726)))
+            ? const Center(child: CircularProgressIndicator(color: AppColors.primaryRed))
             : TabBarView(
                 controller: _tabController,
                 children: List.generate(4, (index) {
@@ -101,12 +102,12 @@ class _TasksViewState extends State<TasksView> with SingleTickerProviderStateMix
               children: [
                 IconButton(
                   onPressed: () => setState(() => _isBoardView = false),
-                  icon: Icon(Icons.list, color: !_isBoardView ? const Color(0xFFDC2726) : Colors.grey),
+                  icon: Icon(Icons.list, color: !_isBoardView ? AppColors.primaryRed : Colors.grey),
                 ),
                 Container(width: 1, height: 20, color: Colors.white10),
                 IconButton(
                   onPressed: () => setState(() => _isBoardView = true),
-                  icon: Icon(Icons.grid_view, color: _isBoardView ? const Color(0xFFDC2726) : Colors.grey),
+                  icon: Icon(Icons.grid_view, color: _isBoardView ? AppColors.primaryRed : Colors.grey),
                 ),
               ],
             ),
@@ -127,7 +128,7 @@ class _TasksViewState extends State<TasksView> with SingleTickerProviderStateMix
         controller: _tabController,
         indicator: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
-          color: const Color(0xFFDC2726),
+          color: AppColors.primaryRed,
         ),
         labelColor: Colors.white,
         unselectedLabelColor: Colors.grey,
@@ -158,7 +159,7 @@ class _TaskList extends StatelessWidget {
 
     return RefreshIndicator(
       onRefresh: onRefresh,
-      color: const Color(0xFFDC2726),
+      color: AppColors.primaryRed,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: tasks.length,
@@ -177,7 +178,7 @@ class _TaskCard extends StatelessWidget {
   Color _getPriorityColor() {
     switch (task.priority) {
       case TaskPriority.low: return Colors.blue;
-      case TaskPriority.medium: return Colors.orange;
+      case TaskPriority.medium: return AppColors.primaryRed;
       case TaskPriority.high: return Colors.redAccent;
       case TaskPriority.critical: return Colors.purple;
     }
@@ -201,27 +202,30 @@ class _TaskCard extends StatelessWidget {
               children: [
                 _PriorityBadge(priority: task.priority, color: _getPriorityColor()),
                 const Spacer(),
-                if (task.deadline != null)
-                  Container(
-                    margin: const EdgeInsets.only(left: 12),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.calendar_today,
-                          size: 14,
-                          color: task.deadline!.isBefore(DateTime.now()) && !task.isCompleted ? Colors.redAccent : Colors.grey,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          DateFormat('MMM dd').format(task.deadline!),
-                          style: TextStyle(
-                            color: task.deadline!.isBefore(DateTime.now()) && !task.isCompleted ? Colors.redAccent : Colors.grey,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
+                // Donut Progress Indicator
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: CircularProgressIndicator(
+                        value: task.progress,
+                        strokeWidth: 4,
+                        backgroundColor: Colors.white.withOpacity(0.05),
+                        valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryRed),
+                      ),
                     ),
-                  ),
+                    Text(
+                      "${(task.progress * 100).toInt()}%",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -234,8 +238,8 @@ class _TaskCard extends StatelessWidget {
                     onUpdate();
                   },
                   child: Icon(
-                    task.isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
-                    color: task.isCompleted ? Colors.green : Colors.grey,
+                    task.isCompleted ? Icons.check_box : Icons.check_box_outline_blank,
+                    color: task.isCompleted ? AppColors.primaryRed : Colors.grey,
                     size: 24,
                   ),
                 ),
@@ -261,6 +265,8 @@ class _TaskCard extends StatelessWidget {
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             decoration: task.isCompleted ? TextDecoration.lineThrough : null,
+                            decorationThickness: task.isCompleted ? 2.5 : null,
+                            decorationColor: task.isCompleted ? AppColors.primaryRed : null,
                           ),
                         ),
                         if (task.description.isNotEmpty) ...[
@@ -279,6 +285,17 @@ class _TaskCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
+            // Progress Bar
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: task.progress,
+                minHeight: 6,
+                backgroundColor: Colors.white.withOpacity(0.05),
+                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryRed),
+              ),
+            ),
+            const SizedBox(height: 16),
             const Divider(color: Colors.white10),
             const SizedBox(height: 8),
             Row(
@@ -290,6 +307,24 @@ class _TaskCard extends StatelessWidget {
                   style: const TextStyle(color: Colors.grey, fontSize: 11),
                 ),
                 const Spacer(),
+                if (task.deadline != null)
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today,
+                        size: 14,
+                        color: task.deadline!.isBefore(DateTime.now()) && !task.isCompleted ? Colors.redAccent : Colors.grey,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        DateFormat('MMM dd').format(task.deadline!),
+                        style: TextStyle(
+                          color: task.deadline!.isBefore(DateTime.now()) && !task.isCompleted ? Colors.redAccent : Colors.grey,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ],

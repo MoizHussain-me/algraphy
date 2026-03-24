@@ -10,11 +10,11 @@ import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:algraphy/core/theme/colors.dart';
 
-
 class AttendanceTimerView extends StatefulWidget {
   final UserModel userName;
+  final VoidCallback? onViewMore;
 
-  const AttendanceTimerView({super.key, required this.userName});
+  const AttendanceTimerView({super.key, required this.userName, this.onViewMore});
 
   @override
   State<AttendanceTimerView> createState() => _AttendanceTimerViewState();
@@ -36,6 +36,9 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
   // Status: null (Not Started), 'Present', 'On Break', 'Completed'
   String? _status; 
   bool _isLoading = true;
+  List<Map<String, dynamic>> _recentHistory = [];
+
+  bool _isProcessingAction = false;
 
   // Geofencing States
   double? _distanceFromOffice;
@@ -52,6 +55,35 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
     super.initState();
     _fetchStatus();
     _updateLocationAndDistance();
+    _fetchHistory();
+  }
+
+  Future<void> _fetchHistory() async {
+    try {
+      final data = await GetIt.I<EmployeeRepository>().getAttendanceHistory();
+      if (mounted) {
+        final Map<String, Map<String, dynamic>> uniqueDays = {};
+        for(var item in data) {
+          final date = item['date']?.toString();
+          if (date != null && !uniqueDays.containsKey(date)) {
+            uniqueDays[date] = item;
+          }
+        }
+        
+        var sortedList = uniqueDays.values.toList();
+        sortedList.sort((a,b) {
+          final dateA = DateTime.tryParse(a['date']?.toString() ?? '') ?? DateTime(1970);
+          final dateB = DateTime.tryParse(b['date']?.toString() ?? '') ?? DateTime(1970);
+          return dateB.compareTo(dateA);
+        });
+
+        setState(() {
+          _recentHistory = sortedList.take(5).toList();
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching history: $e");
+    }
   }
 
   @override
@@ -143,76 +175,88 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
   // --- Actions ---
 
   Future<void> _handleClockIn() async {
+    if (_isProcessingAction) return;
+    setState(() => _isProcessingAction = true);
+
     // 1. Check Permissions and Geofence
-    if (!await _checkLocationPermission()) return;
+    if (!await _checkLocationPermission()) {
+      if (mounted) setState(() => _isProcessingAction = false);
+      return;
+    }
     
     await _updateLocationAndDistance();
     
     if (!_isWithinRange) {
       _showError("You are too far from the office (${_distanceFromOffice?.toStringAsFixed(0)}m). Please go to the office to clock in.");
+      if (mounted) setState(() => _isProcessingAction = false);
       return;
     }
 
-    setState(() => _isLoading = true);
     try {
       await GetIt.I<EmployeeRepository>().checkIn();
       await _fetchStatus(); // Refresh to get the generated ID and valid state
+      await _fetchHistory();
     } catch (e) {
       if (mounted) _showError(e.toString());
-      setState(() => _isLoading = false);
     }
+    if (mounted) setState(() => _isProcessingAction = false);
   }
 
   Future<void> _handleClockOut() async {
-    if (_attendanceId == null) return;
+    if (_attendanceId == null || _isProcessingAction) return;
+    setState(() => _isProcessingAction = true);
     
     // 1. Check Permissions and Geofence
-    if (!await _checkLocationPermission()) return;
+    if (!await _checkLocationPermission()) {
+      if (mounted) setState(() => _isProcessingAction = false);
+      return;
+    }
     
     await _updateLocationAndDistance();
     
     if (!_isWithinRange) {
       _showError("You are too far from the office (${_distanceFromOffice?.toStringAsFixed(0)}m). Please go back to the office to clock out.");
+      if (mounted) setState(() => _isProcessingAction = false);
       return;
     }
 
     // Validate Break Status
     if (_status == 'On Break') {
       _showError("Please Resume Work before Checking Out");
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isProcessingAction = false);
       return;
     }
 
-    setState(() => _isLoading = true);
     try {
       await GetIt.I<EmployeeRepository>().checkOut();
       await _fetchStatus();
+      await _fetchHistory();
     } catch (e) {
       if (mounted) _showError(e.toString());
-      setState(() => _isLoading = false);
     }
+    if (mounted) setState(() => _isProcessingAction = false);
   }
 
   Future<void> _toggleBreak() async {
-    if (_attendanceId == null) return;
+    if (_attendanceId == null || _isProcessingAction) return;
+    setState(() => _isProcessingAction = true);
     
     // Determine action based on current status
     bool isStartingBreak = _status != 'On Break';
     String statusPayload = isStartingBreak ? 'On Break' : 'Present';
 
-    setState(() => _isLoading = true);
     try {
       await GetIt.I<EmployeeRepository>().toggleBreak(statusPayload);
       await _fetchStatus();
+      await _fetchHistory();
     } catch (e) {
       if (mounted) _showError(e.toString());
-      setState(() => _isLoading = false);
     }
+    if (mounted) setState(() => _isProcessingAction = false);
   }
 
   Future<bool> _checkLocationPermission() async {
-    // 1. Web handling: permission_handler is not fully supported on web.
-    // We use geolocator's native permission check instead.
+    // 1. Web handling
     if (kIsWeb) {
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -263,14 +307,10 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
     }
 
     if (status.isGranted) {
-      // PROACTIVELY FETCH POSITION (iOS FIX):
-      // This helps the "Location" toggle appear in iPhone Settings.
       try {
         await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.low)
             .timeout(const Duration(seconds: 3));
-      } catch (_) {
-        // We ignore timeout/errors here as we just want to "trigger" the service
-      }
+      } catch (_) {}
     }
 
     return status.isGranted;
@@ -285,10 +325,10 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_checkInTime != null && mounted && _status != 'Completed') {
         setState(() {
-          // 1. Main Timer: Always runs from Clock In (Requirement: timer should not stop)
+          // 1. Main Timer
           _elapsedTime = DateTime.now().difference(_checkInTime!);
           
-          // 2. Break Timer: Only runs if On Break
+          // 2. Break Timer
           if (_status == 'On Break' && _breakStartTime != null) {
             _breakDuration = DateTime.now().difference(_breakStartTime!);
           } else {
@@ -305,8 +345,7 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     final hours = twoDigits(d.inHours);
     final minutes = twoDigits(d.inMinutes.remainder(60));
-    final seconds = twoDigits(d.inSeconds.remainder(60));
-    return "$hours:$minutes:$seconds";
+    return "$hours:$minutes";
   }
 
   String _formatTime(DateTime? dt) {
@@ -325,14 +364,26 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
     return 'Good Evening';
   }
 
+  String _formatTimeStr(dynamic timeStr) {
+    if (timeStr == null || timeStr == '') return '--:--';
+    try {
+      final dt = DateTime.parse(timeStr.toString());
+      return DateFormat('hh:mm a').format(dt);
+    } catch (e) {
+      return '--:--';
+    }
+  }
+
+  String _formatHours(dynamic hours) {
+    if (hours == null) return '-';
+    final h = double.tryParse(hours.toString()) ?? 0.0;
+    return h.toStringAsFixed(1);
+  }
+
   // --- UI ---
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-  final bool isDark = theme.brightness == Brightness.dark;
-  const Color textGrey = Colors.grey;
-
     // Derived States
     bool isOnDuty = _status == 'Present' || _status == 'On Break';
     bool isOnBreak = _status == 'On Break';
@@ -340,291 +391,379 @@ class _AttendanceTimerViewState extends State<AttendanceTimerView> {
 
     if (_isLoading) return const Center(child: CircularProgressIndicator());
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Date Header
-          Text(_formatDate(), style: const TextStyle(color: textGrey, fontSize: 16, fontWeight: FontWeight.w500)),
-          const SizedBox(height: 8),
-          
-          // Dynamic Greeting
-          Text(
-            "${_getGreeting()}, ${widget.userName.firstName}", 
-            style: Theme.of(context).textTheme.displayLarge,
-          ),
-          const SizedBox(height: 32),
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final hours = twoDigits(_elapsedTime.inHours);
+    final minutes = twoDigits(_elapsedTime.inMinutes.remainder(60));
+    final seconds = twoDigits(_elapsedTime.inSeconds.remainder(60));
 
-          // --- Digital Timer Card ---
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardTheme.color, 
-              borderRadius: BorderRadius.circular(20), 
-              boxShadow: [BoxShadow(color: Theme.of(context).cardTheme.shadowColor ?? Colors.black26, 
-              blurRadius: 10, offset: const Offset(0, 5))]
+    return Container(
+      color: Colors.black, // Dark background matching the design
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Optional: Header
+            Text(_formatDate(), style: const TextStyle(color: Colors.grey, fontSize: 14, fontWeight: FontWeight.w500)),
+            const SizedBox(height: 8),
+            Text(
+              "${_getGreeting()}, ${widget.userName.firstName}", 
+              style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            child: Column(
-              children: [
-                // Status Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isOnBreak 
-                        ? Colors.orange.withOpacity(0.1) 
-                        : (isOnDuty ? Colors.green.withOpacity(0.1) : (isCompleted ? Colors.blue.withOpacity(0.1) : Colors.grey.withOpacity(0.1))),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isOnBreak 
-                          ? Colors.orange 
-                          : (isOnDuty ? Colors.green : (isCompleted ? Colors.blue : Colors.grey)), 
-                      width: 1
-                    ),
-                  ),
-                  child: Text(
-                    isOnBreak ? "ON BREAK" : (isOnDuty ? "ON DUTY" : (isCompleted ? "COMPLETED" : "OFF DUTY")),
-                    style: TextStyle(
-                      color: isOnBreak 
-                          ? Colors.orange 
-                          : (isOnDuty ? Colors.green : (isCompleted ? Colors.blue : Colors.grey)),
-                      fontWeight: FontWeight.bold, 
-                      fontSize: 12, 
-                      letterSpacing: 1.2
-                    ),
-                  ),
-                ),
-                
-                const SizedBox(height: 24),
-                
-                // Main Timer
-                Text(
-                  _formatDuration(_elapsedTime),
-                  style: TextStyle(
-                    color: isDark ? AppColors.white : AppColors.textBlack, 
-                    fontSize: 64, 
-                    fontWeight: FontWeight.w200, 
-                    fontFeatures: [FontFeature.tabularFigures()]
-                  ),
-                ),
-                Text(
-                  isCompleted ? "Total Hours Worked" : "Working Hours", 
-                  style: const TextStyle(color: textGrey, fontSize: 14)
-                ),
+            const SizedBox(height: 24),
 
-                // Geofence Distance Indicator
-                const SizedBox(height: 16),
-                if (_distanceFromOffice != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _isWithinRange ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _isWithinRange ? Icons.location_on : Icons.location_off,
-                          size: 14,
-                          color: _isWithinRange ? Colors.green : Colors.red,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          _isWithinRange 
-                            ? "Within Range (${_distanceFromOffice!.toStringAsFixed(0)}m)" 
-                            : "Out of Range (${_distanceFromOffice!.toStringAsFixed(0)}m)",
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: _isWithinRange ? Colors.green : Colors.red,
-                          ),
-                        ),
-                        if (_officeName != null) ...[
-                          const SizedBox(width: 4),
-                          Text(
-                            "at $_officeName",
-                            style: TextStyle(fontSize: 10, color: _isWithinRange ? Colors.green.withOpacity(0.7) : Colors.red.withOpacity(0.7)),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-
-                // Break Timer (Visible only when on break)
-                if (isOnBreak) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.coffee, color: Colors.orange, size: 16),
-                        const SizedBox(width: 8),
-                        Text(
-                          "Break: ${_formatDuration(_breakDuration)}",
-                          style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-
-                const SizedBox(height: 40),
-
-                // --- Control Buttons ---
-                if (isCompleted)
-                  const Text("Shift Completed for Today", style: TextStyle(color: Colors.green, fontSize: 16, fontWeight: FontWeight.bold))
-                else if (!isOnDuty) 
-                  // CASE 1: Not Checked In -> Show Clock In
-                  GestureDetector(
-                    onTap: _handleClockIn,
-                    child: _buildCircleButton(
-                      icon: Icons.fingerprint, 
-                      color: Colors.green, 
-                      label: "Tap to Check In"
-                    ),
-                  )
-                else 
-                  // CASE 2: Checked In -> Show Break + Clock Out
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+            // --- 1. Top Timer Card ---
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1C1C1E),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 12, // Gap between components in a row
+                    runSpacing: 12, // Gap between rows if wrapped
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      // Break Button
-                      GestureDetector(
-                        onTap: _toggleBreak,
-                        child: _buildCircleButton(
-                          icon: isOnBreak ? Icons.play_arrow : Icons.coffee,
-                          color: isOnBreak ? Colors.green : Colors.orange,
-                          label: isOnBreak ? "Resume" : "Break",
-                          isSmall: false,
-                        ),
+                      // Digital Timer
+                      Row(
+                        mainAxisSize: MainAxisSize.min, // Ensure child Row only takes what it needs
+                        children: [
+                          _buildTimeBox(hours),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 4),
+                            child: Text(":", style: TextStyle(color: Colors.grey, fontSize: 20, fontWeight: FontWeight.bold)),
+                          ),
+                          _buildTimeBox(minutes),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 4),
+                            child: Text(":", style: TextStyle(color: Colors.grey, fontSize: 20, fontWeight: FontWeight.bold)),
+                          ),
+                          _buildTimeBox(seconds),
+                        ],
                       ),
                       
-                      const SizedBox(width: 32),
-
-                      // Clock Out Button (Disabled if on break)
-                      GestureDetector(
-                        onTap: isOnBreak ? null : _handleClockOut,
-                        child: Opacity(
-                          opacity: isOnBreak ? 0.5 : 1.0,
-                          child: _buildCircleButton(
-                            icon: Icons.stop,
-                            color: Theme.of(context).primaryColor,
-                            label: "Check Out",
-                            isSmall: false,
-                          ),
+                      // Action Buttons
+                      Row(
+                        mainAxisSize: MainAxisSize.min, // Ensure child Row only takes what it needs
+                        children: [
+                          if (isOnDuty) ...[
+                            _buildActionButton(
+                              label: isOnBreak ? "Resume" : "Break",
+                              color: const Color(0xFFDC2726),
+                              onTap: _toggleBreak,
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          if (!isCompleted)
+                            _buildActionButton(
+                              label: !isOnDuty ? "Check-in" : "Check-out",
+                              color: !isOnDuty ? Colors.green : const Color(0xFFEF5350), // Red accent
+                              onTap: !isOnDuty ? _handleClockIn : (isOnBreak ? null : _handleClockOut),
+                            )
+                          else
+                            const Text("Completed", style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                        ],
+                      )
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Status
+                  Text(
+                    isOnBreak ? "On Break" : (isOnDuty ? "In" : (isCompleted ? "Completed" : "Out")),
+                    style: TextStyle(
+                      color: isOnBreak ? const Color(0xFFDC2726) : (isOnDuty ? Colors.green : Colors.grey),
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  
+                  // Geofence Distance Indicator
+                  if (_distanceFromOffice != null) ...[
+                    const SizedBox(height: 12),
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _isWithinRange ? Icons.location_on : Icons.location_off,
+                              size: 14,
+                              color: _isWithinRange ? Colors.green : Colors.red,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _isWithinRange 
+                                  ? "Within Range (${_distanceFromOffice!.toStringAsFixed(0)}m)" 
+                                  : "Out of Range (${_distanceFromOffice!.toStringAsFixed(0)}m)",
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: _isWithinRange ? Colors.green : Colors.red,
+                              ),
+                            ),
+                          ],
                         ),
+                        if (_officeName != null)
+                          Text(
+                            " at $_officeName",
+                            style: TextStyle(
+                              fontSize: 12, 
+                              color: (_isWithinRange ? Colors.green : Colors.red).withOpacity(0.7)
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // --- 2. Activity / Work Schedule Card ---
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1C1C1E),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header Row
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.lightBlue.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(Icons.access_time, color: Colors.lightBlue, size: 24),
+                      ),
+                      const SizedBox(width: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("Recent Activity", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 4),
+                          const Text("Last 5 days", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                        ],
                       ),
                     ],
                   ),
-              ],
+                  const SizedBox(height: 24),
+                  
+                  // History Rows
+                  if (_recentHistory.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Center(child: Text("No recent activity.", style: TextStyle(color: Colors.grey))),
+                    )
+                  else
+                    ..._recentHistory.map((item) {
+                      final dateStr = item['date']?.toString();
+                      final dt = DateTime.tryParse(dateStr ?? '') ?? DateTime.now();
+                      final isCompleted = item['clock_out'] != null;
+                      
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 24),
+                        child: _buildActivityRow(
+                          day: dt.day.toString(),
+                          dayStr: DateFormat('E').format(dt).toUpperCase(),
+                          title: "Attendance",
+                          timeStr: "In: ${_formatTimeStr(item['clock_in'])} | Out: ${_formatTimeStr(item['clock_out'])}",
+                          status: isCompleted ? "Completed" : "Active",
+                          statusColor: isCompleted ? Colors.green : const Color(0xFFDC2726),
+                          hours: _formatHours(item['work_hours']),
+                        ),
+                      );
+                    }),
+                  
+                  // View More Button
+                  Center(
+                    child: OutlinedButton(
+                      onPressed: widget.onViewMore ?? () {},
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.white, width: 1),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                      ),
+                      child: const Text("View More", style: TextStyle(color: Colors.white, fontSize: 14)),
+                    ),
+                  )
+                ],
+              ),
             ),
-          ),
+            
+            const SizedBox(height: 16),
 
-          const SizedBox(height: 24),
-
-          // Stats Grid
-          Row(
-            children: [
-              Expanded(child: _buildStatCard(
-                title: "Check In", 
-                time: _formatTime(_checkInTime), 
-                icon: Icons.login, 
-                color: Colors.green, 
-                theme: theme,
-              )),
-              const SizedBox(width: 16),
-              Expanded(child: _buildStatCard(
-                title: "Check Out", 
-                time: _formatTime(_checkOutTime), 
-                icon: Icons.logout, 
-                color: Theme.of(context).primaryColor, 
-                theme: theme,
-              )),
-            ],
-          ),
-        ],
+            // --- 3. Time Logs Card (Matching Design Placeholder) ---
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1C1C1E),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF5350).withOpacity(0.2), // Light red
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(Icons.timer_outlined, color: Color(0xFFEF5350), size: 24),
+                      ),
+                      const SizedBox(width: 16),
+                      const Text(
+                        "Time Logs",
+                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "You are yet to submit your time logs today!",
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                  ),
+                  const SizedBox(height: 20),
+                  GestureDetector(
+                    onTap: () {
+                      // Navigate to or open Time Logs feature
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Text(
+                        "Time Log",
+                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  )
+                ],
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
 
   // --- Helper Widgets ---
 
-  Widget _buildCircleButton({
-    required IconData icon, 
-    required Color color, 
-    required String label, 
-    bool isSmall = false
-  }) {
-    final double size = isSmall ? 60 : 80;
-    final double iconSize = isSmall ? 30 : 40;
-
-    return Column(
-      children: [
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          height: size,
-          width: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: color,
-            boxShadow: [
-              BoxShadow(color: color.withOpacity(0.4), blurRadius: 20, spreadRadius: 5)
-            ],
-          ),
-          child: Icon(icon, color: Colors.white, size: iconSize),
+  Widget _buildTimeBox(String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF323232), // Grey box for timer numbers
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        value,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.w400,
+          fontFeatures: [FontFeature.tabularFigures()],
         ),
-        const SizedBox(height: 12),
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 14)),
-      ],
+      ),
     );
   }
 
- 
-Widget _buildStatCard({
-  required String title, 
-  required String time, 
-  required IconData icon, 
-  required Color color, 
-  required ThemeData theme, // Accepting theme instead of surfaceColor
-}) {
-  final isDark = theme.brightness == Brightness.dark;
+  Widget _buildActionButton({required String label, required Color color, VoidCallback? onTap}) {
+    bool isProcessing = _isProcessingAction && onTap != null;
+    
+    return Material(
+      color: (onTap == null || isProcessing) ? color.withOpacity(0.3) : color,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: isProcessing ? null : onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          child: isProcessing
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                )
+              : Text(
+                  label,
+                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+        ),
+      ),
+    );
+  }
 
-  return Container(
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      color: theme.colorScheme.surface, // Uses theme surface
-      borderRadius: BorderRadius.circular(16),
-      border: isDark ? null : Border.all(color: Colors.black.withOpacity(0.05)),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start, 
+  Widget _buildActivityRow({
+    required String day,
+    required String dayStr,
+    required String title,
+    required String timeStr,
+    required String status,
+    required Color statusColor,
+    required String hours,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween, 
-          children: [
-            Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12)), 
-            Icon(icon, color: color, size: 18)
-          ]
+        // Dark circle with date
+        Container(
+          width: 50,
+          height: 50,
+          decoration: const BoxDecoration(
+            color: Colors.black,
+            shape: BoxShape.circle,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(day, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(dayStr, style: const TextStyle(color: Colors.grey, fontSize: 10)),
+            ],
+          ),
         ),
-        const SizedBox(height: 12),
-        // ✅ FIXED: Now correctly uses theme logic
-        Text(
-          time, 
-          style: TextStyle(
-            color: isDark ? Colors.white : Colors.black87, 
-            fontSize: 20, 
-            fontWeight: FontWeight.bold
-          )
+        const SizedBox(width: 16),
+        // Center text column
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 4),
+              Text(timeStr, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+              const SizedBox(height: 4),
+              Text(status, style: TextStyle(color: statusColor, fontSize: 12)),
+            ],
+          ),
         ),
-      ]
-    ),
-  );
-}
-
+        // Right side hours
+        if (hours.isNotEmpty)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(hours, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 2),
+              const Text("Hrs", style: TextStyle(color: Colors.grey, fontSize: 12)),
+            ],
+          ),
+      ],
+    );
+  }
 }

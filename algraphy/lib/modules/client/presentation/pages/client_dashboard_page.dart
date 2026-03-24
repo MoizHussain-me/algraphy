@@ -100,7 +100,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> with SingleTi
             childAspectRatio: 1.3,
             children: [
               _buildStatCard("Active Projects", "0", Icons.rocket_launch, Colors.blue),
-              _buildStatCard("Pending Items", "0", Icons.pending_actions, Colors.orange),
+              _buildStatCard("Pending Items", "0", Icons.pending_actions, const Color(0xFFDC2726)),
               _buildStatCard("Total Files", "0", Icons.folder_copy, Colors.green),
               _buildStatCard("Messages", "0", Icons.chat_bubble_outline, Colors.purple),
             ],

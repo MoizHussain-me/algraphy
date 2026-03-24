@@ -1,4 +1,5 @@
 import 'package:algraphy/modules/employee/data/employee_repository.dart';
+import 'package:algraphy/modules/employee/presentation/views/leave_details_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 
@@ -89,6 +90,7 @@ class _ApprovalsViewState extends State<ApprovalsView> {
         final reason = req['reason'] ?? '';
         final start = req['start_date'];
         final end = req['end_date'];
+        final canAction = req['can_action'] ?? false;
 
         return Card(
           color: theme.cardColor,
@@ -98,100 +100,90 @@ class _ApprovalsViewState extends State<ApprovalsView> {
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(color: theme.dividerColor.withOpacity(0.05)),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: isDark ? Colors.grey[800] : Colors.grey[300],
-                      child: Text(
-                        name.isNotEmpty ? name[0] : '?', 
-                        style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            name, 
-                            style: TextStyle(
-                              color: theme.textTheme.bodyLarge?.color, 
-                              fontWeight: FontWeight.bold, 
-                              fontSize: 16
-                            ),
-                          ),
-                          Text("$days Days • $type", style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.black26 : theme.scaffoldBackgroundColor.withOpacity(0.5), 
-                    borderRadius: BorderRadius.circular(8),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => LeaveDetailsView(
+                    request: req,
+                    isManagerView: true,
+                    canAction: canAction,
+                    onAction: (status) => _processRequest(id, status),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          Icon(Icons.date_range, color: isDark ? Colors.white54 : Colors.black45, size: 14),
-                          const SizedBox(width: 6),
-                          Text(
-                            "$start  ➜  $end", 
-                            style: TextStyle(
-                              color: isDark ? Colors.white70 : Colors.black87, 
-                              fontWeight: FontWeight.bold
-                            ),
-                          ),
-                        ],
+                      CircleAvatar(
+                        backgroundColor: isDark ? Colors.grey[800] : Colors.grey[300],
+                        child: Text(
+                          name.isNotEmpty ? name[0] : '?', 
+                          style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                        ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "Reason: $reason", 
-                        style: TextStyle(
-                          color: isDark ? Colors.white54 : Colors.black54, 
-                          fontStyle: FontStyle.italic
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              name, 
+                              style: TextStyle(
+                                color: theme.textTheme.bodyLarge?.color, 
+                                fontWeight: FontWeight.bold, 
+                                fontSize: 16
+                              ),
+                            ),
+                            Text("$days Days • $type", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => _processRequest(id, "Rejected"),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red, 
-                          side: const BorderSide(color: Colors.red),
-                        ),
-                        child: const Text("Reject"),
-                      ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.black26 : theme.scaffoldBackgroundColor.withOpacity(0.5), 
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () => _processRequest(id, "Approved"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green, 
-                          foregroundColor: Colors.white,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.date_range, color: isDark ? Colors.white54 : Colors.black45, size: 14),
+                            const SizedBox(width: 6),
+                            Text(
+                              "$start  ➜  $end", 
+                              style: TextStyle(
+                                color: isDark ? Colors.white70 : Colors.black87, 
+                                fontWeight: FontWeight.bold
+                              ),
+                            ),
+                          ],
                         ),
-                        child: const Text("Approve"),
-                      ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "Reason: $reason", 
+                          style: TextStyle(
+                            color: isDark ? Colors.white54 : Colors.black54, 
+                            fontStyle: FontStyle.italic
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                )
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         );

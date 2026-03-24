@@ -94,7 +94,12 @@ class _AttendancePageState extends State<AttendancePage> with SingleTickerProvid
       ];
     } else {
       views = [
-        AttendanceTimerView(userName: widget.currentUser),
+        AttendanceTimerView(
+          userName: widget.currentUser,
+          onViewMore: () {
+            _tabController.animateTo(4);
+          },
+        ),
         DashboardView(currentUser: widget.currentUser),
         MyLeavesView(key: _leavesViewKey),
         DocumentManagementPage(isAdmin: false),

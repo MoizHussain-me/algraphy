@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "620504539920",
+    "project_id": "al-graphy-pro",
+    "storage_bucket": "al-graphy-pro.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:620504539920:android:5998a743d44ae62bbbbb95",
+        "android_client_info": {
+          "package_name": "com.algraphy.algraphy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB-gEt0Db5MROPlgKdXkTAIk44TkeC_lJA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

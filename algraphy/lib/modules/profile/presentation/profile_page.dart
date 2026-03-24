@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:algraphy/modules/auth/data/models/user_model.dart';
 import 'package:algraphy/core/utils/image_helper.dart';
+import 'package:algraphy/core/utils/constants.dart';
 
 enum ProfileSource { attendance, management, dashboard }
 
@@ -49,7 +50,7 @@ class ProfilePage extends StatelessWidget {
               _infoTile(theme, "Reporting Manager (L1)", user.reportingManagerName ?? "-", Icons.account_tree_outlined),
               if (user.secondaryReportingManagerName != null && user.secondaryReportingManagerName!.isNotEmpty)
                 _infoTile(theme, "Reporting Manager (L2)", user.secondaryReportingManagerName!, Icons.account_tree_outlined),
-              _infoTile(theme, "Location", user.location ?? "Office", Icons.location_on_outlined),
+              _infoTile(theme, "Office", user.officeName ?? "No Office Assigned", Icons.location_on_outlined),
             ]),
 
             const SizedBox(height: 24),
@@ -76,7 +77,7 @@ class ProfilePage extends StatelessWidget {
               const SizedBox(height: 24),
               _buildSectionTitle("Private Financials"),
               _buildInfoCard(theme, [
-                _infoTile(theme, "Monthly Salary", "\$${user.salary ?? '0.0'}", Icons.payments_outlined),
+                _infoTile(theme, "Monthly Salary", "${AppConstants.currencySymbol} ${user.salary ?? '0.0'}", Icons.payments_outlined),
                 _infoTile(theme, "Bank IBAN", user.iban ?? "-", Icons.account_balance_wallet_outlined),
               ]),
             ],
@@ -102,9 +103,7 @@ class ProfilePage extends StatelessWidget {
           child: CircleAvatar(
             radius: 55,
             backgroundColor: theme.primaryColor.withOpacity(0.1),
-            backgroundImage: user.profilePicture != null && user.profilePicture!.isNotEmpty
-                ? NetworkImage(ImageHelper.getFullUrl(user.profilePicture!))
-                : null,
+            backgroundImage: ImageHelper.getProvider(user.profilePicture),
             child: (user.profilePicture == null || user.profilePicture!.isEmpty)
                 ? Text(user.firstName?[0] ?? "U", 
                     style: TextStyle(fontSize: 36, color: theme.primaryColor, fontWeight: FontWeight.bold))

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'constants.dart';
 
 class ImageHelper {
@@ -26,5 +27,11 @@ class ImageHelper {
     // 3. Combine
     // Result: http://192.168.1.15/algraphy_api/uploads/emp_123.jpg
     return "$rootUrl$path";
+  }
+
+  static ImageProvider? getProvider(String? path) {
+    if (path == null || path.isEmpty) return null;
+    if (path.startsWith("http")) return NetworkImage(path);
+    return NetworkImage(getFullUrl(path));
   }
 }

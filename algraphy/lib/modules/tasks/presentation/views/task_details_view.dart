@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:algraphy/core/utils/constants.dart';
+import 'package:algraphy/core/theme/colors.dart';
 
 class TaskDetailsView extends StatefulWidget {
   final TaskModel task;
@@ -78,7 +79,6 @@ class _TaskDetailsViewState extends State<TaskDetailsView> {
               ),
             ),
           ),
-          _buildBottomAction(),
         ],
       ),
     );
@@ -155,9 +155,9 @@ class _TaskDetailsViewState extends State<TaskDetailsView> {
                   value: _task.status,
                   underline: const SizedBox(),
                   dropdownColor: const Color(0xFF1C1C1C),
-                  style: TextStyle(
-                    color: _task.status == 'completed' ? Colors.green : (_task.status == 'in_progress' ? Colors.blue : Colors.orange),
-                    fontSize: 14,
+                    style: TextStyle(
+                      color: _task.status == 'completed' ? Colors.green : (_task.status == 'in_progress' ? Colors.blue : AppColors.primaryRed),
+                      fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
                   items: const [
@@ -167,6 +167,35 @@ class _TaskDetailsViewState extends State<TaskDetailsView> {
                   ],
                   onChanged: (val) {
                     if (val != null) _updateStatus(val);
+                  },
+                ),
+              ),
+            ],
+          ),
+          const Divider(color: Colors.white10, height: 32),
+          Row(
+            children: [
+              const Icon(Icons.priority_high, color: Colors.grey, size: 20),
+              const SizedBox(width: 16),
+              const Text("Priority", style: TextStyle(color: Colors.grey, fontSize: 14)),
+              const Spacer(),
+              Theme(
+                data: Theme.of(context).copyWith(canvasColor: const Color(0xFF1C1C1C)),
+                child: DropdownButton<TaskPriority>(
+                  value: _task.priority,
+                  underline: const SizedBox(),
+                  dropdownColor: const Color(0xFF1C1C1C),
+                  style: TextStyle(
+                    color: _getPriorityColor(_task.priority),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  items: TaskPriority.values.map((p) => DropdownMenuItem(
+                    value: p,
+                    child: Text(p.name.toUpperCase()),
+                  )).toList(),
+                  onChanged: (val) {
+                    if (val != null) _updatePriority(val);
                   },
                 ),
               ),
@@ -208,7 +237,7 @@ class _TaskDetailsViewState extends State<TaskDetailsView> {
             child: LinearProgressIndicator(
               value: progress,
               backgroundColor: Colors.white10,
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFDC2726)),
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryRed),
               minHeight: 4,
             ),
           ),
@@ -280,8 +309,8 @@ class _TaskDetailsViewState extends State<TaskDetailsView> {
             ),
             TextButton.icon(
               onPressed: _showAddCollaboratorPicker,
-              icon: const Icon(Icons.person_add_alt_1, color: Color(0xFFDC2726), size: 16),
-              label: const Text("Add People", style: TextStyle(color: Color(0xFFDC2726), fontSize: 13)),
+              icon: const Icon(Icons.person_add_alt_1, color: AppColors.primaryRed, size: 16),
+              label: const Text("Add People", style: TextStyle(color: AppColors.primaryRed, fontSize: 13)),
               style: TextButton.styleFrom(padding: EdgeInsets.zero),
             ),
           ],
@@ -303,19 +332,19 @@ class _TaskDetailsViewState extends State<TaskDetailsView> {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFDC2726).withOpacity(0.08),
+                  color: AppColors.primaryRed.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFDC2726).withOpacity(0.25)),
+                  border: Border.all(color: AppColors.primaryRed.withOpacity(0.25)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     CircleAvatar(
                       radius: 11,
-                      backgroundColor: const Color(0xFFDC2726).withOpacity(0.2),
+                      backgroundColor: AppColors.primaryRed.withOpacity(0.2),
                       child: Text(
                         initial,
-                        style: const TextStyle(color: Color(0xFFDC2726), fontSize: 9, fontWeight: FontWeight.bold),
+                        style: const TextStyle(color: AppColors.primaryRed, fontSize: 9, fontWeight: FontWeight.bold),
                       ),
                     ),
                     const SizedBox(width: 7),
@@ -423,7 +452,7 @@ class _TaskDetailsViewState extends State<TaskDetailsView> {
             const Text("Attachments", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
             IconButton(
               onPressed: _pickFile,
-              icon: const Icon(Icons.add_circle_outline, color: Color(0xFFDC2726), size: 20),
+              icon: const Icon(Icons.add_circle_outline, color: AppColors.primaryRed, size: 20),
             ),
           ],
         ),
@@ -653,6 +682,22 @@ class _TaskDetailsViewState extends State<TaskDetailsView> {
       }
     }
   }
+  
+  Future<void> _updatePriority(TaskPriority newPriority) async {
+    setState(() => _isUpdating = true);
+    try {
+      await GetIt.I<TasksRepository>().updateTaskPriority(_task.id, newPriority.name);
+      setState(() {
+        _task = _task.copyWith(priority: newPriority);
+        _isUpdating = false;
+      });
+    } catch (e) {
+      setState(() => _isUpdating = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      }
+    }
+  }
 
   Widget _buildActivitySection() {
     return Column(
@@ -661,7 +706,7 @@ class _TaskDetailsViewState extends State<TaskDetailsView> {
         const Text("Activity", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 16),
         if (_isLoadingComments)
-          const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator(color: Color(0xFFDC2726), strokeWidth: 2)))
+          const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator(color: AppColors.primaryRed, strokeWidth: 2)))
         else if (_comments.isEmpty)
           Container(
             padding: const EdgeInsets.all(24),
@@ -688,8 +733,8 @@ class _TaskDetailsViewState extends State<TaskDetailsView> {
                   children: [
                     CircleAvatar(
                       radius: 16,
-                      backgroundColor: const Color(0xFFDC2726).withOpacity(0.1),
-                      child: Text(initial, style: const TextStyle(color: Color(0xFFDC2726), fontSize: 12, fontWeight: FontWeight.bold)),
+                      backgroundColor: AppColors.primaryRed.withOpacity(0.1),
+                      child: Text(initial, style: const TextStyle(color: AppColors.primaryRed, fontSize: 12, fontWeight: FontWeight.bold)),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -744,41 +789,24 @@ class _TaskDetailsViewState extends State<TaskDetailsView> {
           ),
           IconButton(
             onPressed: _addComment,
-            icon: const Icon(Icons.send_rounded, color: Color(0xFFDC2726), size: 20),
+            icon: const Icon(Icons.send_rounded, color: AppColors.primaryRed, size: 20),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBottomAction() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-      decoration: const BoxDecoration(
-        color: Color(0xFF0F0F0F),
-        border: Border(top: BorderSide(color: Colors.white10)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: _isUpdating ? null : _toggleStatus,
-              icon: _isUpdating 
-                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : Icon(_task.isCompleted ? Icons.undo : Icons.check_circle_outline),
-              label: Text(_task.isCompleted ? "Mark as Active" : "Complete Task"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _task.isCompleted ? const Color(0xFF2C2C2C) : const Color(0xFFDC2726),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 0,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  Color _getPriorityColor(TaskPriority priority) {
+    switch (priority) {
+      case TaskPriority.low:
+        return Colors.blue;
+      case TaskPriority.medium:
+        return AppColors.primaryRed;
+      case TaskPriority.high:
+        return Colors.redAccent;
+      case TaskPriority.critical:
+        return Colors.purple;
+    }
   }
 }
 
@@ -801,7 +829,7 @@ class _SubtaskTile extends StatelessWidget {
             children: [
               Icon(
                 subtask.isCompleted ? Icons.check_box : Icons.check_box_outline_blank,
-                color: subtask.isCompleted ? const Color(0xFFDC2726) : Colors.grey,
+                color: subtask.isCompleted ? AppColors.primaryRed : Colors.grey,
                 size: 20,
               ),
               const SizedBox(width: 12),
@@ -812,6 +840,8 @@ class _SubtaskTile extends StatelessWidget {
                     color: subtask.isCompleted ? Colors.grey : Colors.white,
                     fontSize: 14,
                     decoration: subtask.isCompleted ? TextDecoration.lineThrough : null,
+                    decorationThickness: subtask.isCompleted ? 2.5 : null,
+                    decorationColor: subtask.isCompleted ? AppColors.primaryRed : null,
                   ),
                 ),
               ),
@@ -846,8 +876,8 @@ class _AddSubtaskInputState extends State<_AddSubtaskInput> {
     if (!_isEditing) {
       return TextButton.icon(
         onPressed: () => setState(() => _isEditing = true),
-        icon: const Icon(Icons.add, size: 18, color: Color(0xFFDC2726)),
-        label: const Text("Add a subtask", style: TextStyle(color: Color(0xFFDC2726), fontSize: 13)),
+        icon: const Icon(Icons.add, size: 18, color: AppColors.primaryRed),
+        label: const Text("Add a subtask", style: TextStyle(color: AppColors.primaryRed, fontSize: 13)),
         style: TextButton.styleFrom(padding: EdgeInsets.zero, alignment: Alignment.centerLeft),
       );
     }
@@ -862,7 +892,7 @@ class _AddSubtaskInputState extends State<_AddSubtaskInput> {
           hintText: "What needs to be done?",
           hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
           suffixIcon: IconButton(
-            icon: const Icon(Icons.send, color: Color(0xFFDC2726), size: 18),
+            icon: const Icon(Icons.send, color: AppColors.primaryRed, size: 18),
             onPressed: () {
               if (_ctrl.text.trim().isNotEmpty) {
                 widget.onAdd(_ctrl.text.trim());
@@ -917,7 +947,7 @@ class _PriorityBadge extends StatelessWidget {
   Color _getColor() {
     switch (priority) {
       case TaskPriority.low: return Colors.blue;
-      case TaskPriority.medium: return Colors.orange;
+      case TaskPriority.medium: return AppColors.primaryRed;
       case TaskPriority.high: return Colors.redAccent;
       case TaskPriority.critical: return Colors.purple;
     }

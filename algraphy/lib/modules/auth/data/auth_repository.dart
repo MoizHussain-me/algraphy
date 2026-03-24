@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:algraphy/modules/auth/data/models/user_model.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../../core/utils/constants.dart';
 import '../../../../core/services/logger_service.dart';
+import '../../../../core/services/notification_service.dart';
 
 class AuthRepository {
   final ApiClient _api;
@@ -95,6 +97,24 @@ class AuthRepository {
     // 2. Save User Data
     // We explicitly call persistUser here to ensure data is written to disk
     await persistUser(user);
+
+    // 3. Send FCM Token to Backend
+    try {
+      final fcmToken = await NotificationService().getFCMToken();
+      if (fcmToken != null) {
+        await _api.post('update_fcm_token', {
+          'fcm_token': fcmToken,
+          'token': token,
+        }, token: token);
+        logger.i("AUTH: FCM Token synced with backend.");
+      }
+    } catch (e) {
+      logger.w("AUTH: Failed to sync FCM token: $e");
+      // For deeper debugging if needed
+      if (kDebugMode) {
+        print("Detailed FCM Sync Error: $e");
+      }
+    }
   }
 
   Future<void> persistUser(UserModel user) async {
@@ -201,5 +221,29 @@ class AuthRepository {
     await logout();
   }
 
+  // --- EMAIL VERIFICATION & INITIAL SETUP ---
 
+  Future<Map<String, dynamic>> verifyEmail(String token) async {
+    logger.i("AUTH: Verifying email with token: $token");
+    final response = await _api.post('verify_email', {'token': token});
+    if (response['status'] == 'success') {
+      logger.i("AUTH: Email verified successfully.");
+      return response;
+    } else {
+      throw Exception(response['message'] ?? 'Verification failed');
+    }
+  }
+
+  Future<void> setupInitialPassword(String token, String password) async {
+    logger.i("AUTH: Setting initial password for token: $token");
+    final response = await _api.post('setup_password', {
+      'token': token,
+      'password': password,
+    });
+
+    if (response['status'] != 'success') {
+      throw Exception(response['message'] ?? 'Failed to set password');
+    }
+    logger.i("AUTH: Initial password set successfully.");
+  }
 }

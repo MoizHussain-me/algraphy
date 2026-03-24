@@ -21,8 +21,10 @@ class RegistrationFormView extends StatefulWidget {
 class _RegistrationFormViewState extends State<RegistrationFormView> {
   final _formKey = GlobalKey<FormState>();
 
-  List<String> _departments = []; 
-  List<UserModel> _employeeList = []; 
+  List<Map<String, dynamic>> _departments = [];
+  List<Map<String, dynamic>> _designationsList = [];
+  List<Map<String, dynamic>> _shiftsList = [];
+  List<UserModel> _employeeList = [];
   List<Map<String, dynamic>> _officeList = [];
   bool _isLoadingData = true;
   bool _isSubmitting = false;
@@ -42,9 +44,9 @@ class _RegistrationFormViewState extends State<RegistrationFormView> {
   final _hourlyRateCtrl = TextEditingController(); 
   final _ibanCtrl = TextEditingController();
 
-  String? _selectedDepartment;
-  final _locationCtrl = TextEditingController();
-  final _designationCtrl = TextEditingController();
+  String? _selectedDepartmentId;
+  String? _selectedDesignationId;
+  String? _selectedShiftId;
   final _dojCtrl = TextEditingController();
   final _currExpCtrl = TextEditingController(); 
   final _totalExpCtrl = TextEditingController(); 
@@ -118,8 +120,8 @@ class _RegistrationFormViewState extends State<RegistrationFormView> {
     // Dispose all controllers
     _empIdCtrl.dispose(); _firstNameCtrl.dispose(); _lastNameCtrl.dispose(); _nickNameCtrl.dispose();
     _emailCtrl.dispose(); _jobDescCtrl.dispose(); _subJobDescCtrl.dispose(); _salaryCtrl.dispose();
-    _lastMonthCommCtrl.dispose(); _hourlyRateCtrl.dispose(); _ibanCtrl.dispose(); _locationCtrl.dispose();
-    _designationCtrl.dispose(); _dojCtrl.dispose(); _currExpCtrl.dispose(); _totalExpCtrl.dispose();
+    _lastMonthCommCtrl.dispose(); _hourlyRateCtrl.dispose(); _ibanCtrl.dispose();
+    _dojCtrl.dispose(); _currExpCtrl.dispose(); _totalExpCtrl.dispose();
     _sourceOfHireCtrl.dispose(); _dobCtrl.dispose(); _ageCtrl.dispose(); _aboutMeCtrl.dispose();
     _expertiseCtrl.dispose(); _workPhoneCtrl.dispose(); _extCtrl.dispose(); _personalMobileCtrl.dispose();
     _personalEmailCtrl.dispose(); _seatingLocationCtrl.dispose(); _presentAddressCtrl.dispose(); _permanentAddressCtrl.dispose();
@@ -128,7 +130,7 @@ class _RegistrationFormViewState extends State<RegistrationFormView> {
     _firstNameFocus.dispose(); _lastNameFocus.dispose(); _nickNameFocus.dispose(); _empIdFocus.dispose();
     _emailFocus.dispose(); _jobDescFocus.dispose(); _subJobDescFocus.dispose();
     _salaryFocus.dispose(); _hourlyRateFocus.dispose(); _lastMonthCommFocus.dispose(); _ibanFocus.dispose();
-    _designationFocus.dispose(); _currExpFocus.dispose(); _totalExpFocus.dispose(); _sourceOfHireFocus.dispose();
+    _currExpFocus.dispose(); _totalExpFocus.dispose(); _sourceOfHireFocus.dispose();
     _workPhoneFocus.dispose(); _extFocus.dispose(); _personalMobileFocus.dispose(); _personalEmailFocus.dispose();
     _seatingLocationFocus.dispose(); _presentAddressFocus.dispose(); _permanentAddressFocus.dispose();
     _aboutMeFocus.dispose(); _expertiseFocus.dispose();
@@ -143,13 +145,17 @@ class _RegistrationFormViewState extends State<RegistrationFormView> {
         repo.getDepartments(),
         repo.getAllEmployees(),
         repo.getOffices(),
+        repo.getDesignationsList(),
+        repo.getShiftsList(),
       ]);
       
       if (mounted) {
         setState(() {
-          _departments = results[0] as List<String>;
+          _departments = results[0] as List<Map<String, dynamic>>;
           _employeeList = results[1] as List<UserModel>;
           _officeList = results[2] as List<Map<String, dynamic>>;
+          _designationsList = results[3] as List<Map<String, dynamic>>;
+          _shiftsList = results[4] as List<Map<String, dynamic>>;
           _isLoadingData = false;
         });
         if (widget.userToEdit != null) _prefillUserData(widget.userToEdit!);
@@ -163,7 +169,7 @@ class _RegistrationFormViewState extends State<RegistrationFormView> {
     _firstNameCtrl.text = user.firstName ?? '';
     _lastNameCtrl.text = user.lastName ?? '';
     _nickNameCtrl.text = user.nickName ?? '';
-    _empIdCtrl.text = user.employeeId ?? '';
+    _empIdCtrl.text = user.employeeCode ?? '';
     _emailCtrl.text = user.email;
     String incomingRole = (user.role).toLowerCase();
     _systemRole = ['employee', 'manager', 'admin'].contains(incomingRole) ? incomingRole : 'employee';
@@ -173,9 +179,9 @@ class _RegistrationFormViewState extends State<RegistrationFormView> {
     _lastMonthCommCtrl.text = user.lastMonthCommission?.toString() ?? ''; 
     _hourlyRateCtrl.text = user.employeeHourlyRate?.toString() ?? '';     
     _ibanCtrl.text = user.iban ?? '';
-    if (user.department != null && _departments.contains(user.department)) _selectedDepartment = user.department;
-    _locationCtrl.text = user.location ?? '';
-    _designationCtrl.text = user.designation ?? '';
+    if (user.departmentId != null) _selectedDepartmentId = user.departmentId;
+    if (user.designationId != null) _selectedDesignationId = user.designationId;
+    _selectedShiftId = user.shiftId;
     _dojCtrl.text = (user.dateOfJoining == "0000-00-00") ? "" : (user.dateOfJoining ?? '');
     _employmentType = user.employmentType;
     _employeeStatus = user.employeeStatus;
@@ -206,15 +212,17 @@ class _RegistrationFormViewState extends State<RegistrationFormView> {
     _formKey.currentState?.reset();
     _firstNameCtrl.clear(); _lastNameCtrl.clear(); _nickNameCtrl.clear(); _empIdCtrl.clear();
     _emailCtrl.clear(); _jobDescCtrl.clear(); _subJobDescCtrl.clear(); _salaryCtrl.clear();
-    _lastMonthCommCtrl.clear(); _hourlyRateCtrl.clear(); _ibanCtrl.clear(); _locationCtrl.clear();
-    _designationCtrl.clear(); _dojCtrl.clear(); _currExpCtrl.clear(); _totalExpCtrl.clear();
+    _lastMonthCommCtrl.clear(); _hourlyRateCtrl.clear(); _ibanCtrl.clear();
+    _dojCtrl.clear(); _currExpCtrl.clear(); _totalExpCtrl.clear();
     _sourceOfHireCtrl.clear(); _dobCtrl.clear(); _ageCtrl.clear(); _aboutMeCtrl.clear();
     _expertiseCtrl.clear(); _workPhoneCtrl.clear(); _extCtrl.clear(); _personalMobileCtrl.clear();
     _personalEmailCtrl.clear(); _seatingLocationCtrl.clear(); _presentAddressCtrl.clear(); _permanentAddressCtrl.clear();
     setState(() {
       _newProfilePicPath = null;
       _profilePicBytes = null;
-      _selectedDepartment = null;
+      _selectedDepartmentId = null;
+      _selectedDesignationId = null;
+      _selectedShiftId = null;
       _selectedOfficeId = null;
       _selectedReportingManagerId = null;
       _selectedSecondaryManagerId = null;
@@ -273,15 +281,18 @@ class _RegistrationFormViewState extends State<RegistrationFormView> {
       password: '',
       role: _systemRole.toLowerCase(), 
       firstName: _firstNameCtrl.text.trim(), lastName: _lastNameCtrl.text.trim(),
-      nickName: _nickNameCtrl.text.trim(), employeeId: _empIdCtrl.text.trim(),
+      nickName: _nickNameCtrl.text.trim(),
+      employeeId: widget.userToEdit?.employeeId, 
+      employeeCode: _empIdCtrl.text.trim(),
       salary: double.tryParse(cleanSalary),
       lastMonthCommission: double.tryParse(_lastMonthCommCtrl.text),
       employeeHourlyRate: double.tryParse(_hourlyRateCtrl.text),
       iban: _ibanCtrl.text.trim(),
       jobDescription: _jobDescCtrl.text,
       subJobDescription: _subJobDescCtrl.text,
-      department: _selectedDepartment, location: _locationCtrl.text,
-      designation: _designationCtrl.text, dateOfJoining: _dojCtrl.text,
+      departmentId: _selectedDepartmentId,
+      designationId: _selectedDesignationId, dateOfJoining: _dojCtrl.text,
+      shiftId: _selectedShiftId,
       employmentType: _employmentType, employeeStatus: _employeeStatus,
       sourceOfHire: _sourceOfHireCtrl.text,
       currentExperience: _currExpCtrl.text, totalExperience: _totalExpCtrl.text,
@@ -324,7 +335,7 @@ class _RegistrationFormViewState extends State<RegistrationFormView> {
   }
 
   void _scrollToFirstError() {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please fix validaton errors"), backgroundColor: Colors.orange));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please fix validaton errors"), backgroundColor: Color(0xFFDC2726)));
   }
 
   @override
@@ -409,7 +420,7 @@ class _RegistrationFormViewState extends State<RegistrationFormView> {
                       theme: theme,
                       children: [
                         _textFieldRow(
-                          _customTextField("Salary", _salaryCtrl, theme, icon: Icons.attach_money, isNumber: true, isSalary: true, focusNode: _salaryFocus, nextFocus: _hourlyRateFocus),
+                          _customTextField("Salary", _salaryCtrl, theme, icon: Icons.payments_outlined, isNumber: true, isSalary: true, focusNode: _salaryFocus, nextFocus: _hourlyRateFocus),
                           _customTextField("Hourly Rate", _hourlyRateCtrl, theme, isNumber: true, icon: Icons.timer_outlined, focusNode: _hourlyRateFocus, nextFocus: _lastMonthCommFocus),
                         ),
                         _fieldSpacer(),
@@ -428,14 +439,16 @@ class _RegistrationFormViewState extends State<RegistrationFormView> {
                       theme: theme,
                       children: [
                         _textFieldRow(
-                          _customDropdown("Department", _departments, theme, (val) => setState(() => _selectedDepartment = val), isRequired: true),
+                          _customObjectDropdown("Department", _departments, theme, (val) => setState(() => _selectedDepartmentId = val), isRequired: true, selectedValue: _selectedDepartmentId),
                           _officeDropdown("Assigned Office", _selectedOfficeId, theme, (val) => setState(() => _selectedOfficeId = val)),
                         ),
                         _fieldSpacer(),
                         _textFieldRow(
-                          _customTextField("Designation", _designationCtrl, theme, icon: Icons.work_history_outlined, focusNode: _designationFocus, nextFocus: _currExpFocus),
+                          _designationDropdown("Designation", theme),
                           _customTextField("Date of Joining", _dojCtrl, theme, icon: Icons.calendar_today_outlined, isDate: true),
                         ),
+                        _fieldSpacer(),
+                        _shiftDropdown("Working Shift", theme),
                         _fieldSpacer(),
                         _textFieldRow(
                           _customDropdown("Emp Type", ["Permanent", "Contract", "Intern"], theme, (val) => setState(() => _employmentType = val)),
@@ -613,7 +626,7 @@ class _RegistrationFormViewState extends State<RegistrationFormView> {
       imageProvider = FileImage(io.File(_newProfilePicPath!)); 
     } 
     else if (widget.userToEdit?.profilePicture != null && widget.userToEdit!.profilePicture!.isNotEmpty) { 
-      imageProvider = NetworkImage(ImageHelper.getFullUrl(widget.userToEdit!.profilePicture)); 
+      imageProvider = ImageHelper.getProvider(widget.userToEdit!.profilePicture); 
     }
     return Column(children: [
       const SizedBox(height: 8),
@@ -660,16 +673,23 @@ class _RegistrationFormViewState extends State<RegistrationFormView> {
   }
 
   Widget _buildGenderRadio(String value, ThemeData theme) { 
-    return Row(mainAxisSize: MainAxisSize.min, children: [
-      Radio<String>(
-        value: value, 
-        groupValue: _gender, 
-        activeColor: const Color(0xFFDC2726), 
-        onChanged: (val) => setState(() => _gender = val!),
-        visualDensity: VisualDensity.compact,
-      ), 
-      Text(value, style: const TextStyle(color: Colors.white, fontSize: 13))
-    ]); 
+    final isSelected = _gender == value;
+    return GestureDetector(
+      onTap: () => setState(() => _gender = value),
+      child: Row(
+        mainAxisSize: MainAxisSize.min, 
+        children: [
+          Icon(
+            isSelected ? Icons.check_box : Icons.check_box_outline_blank,
+            color: isSelected ? const Color(0xFFDC2726) : Colors.grey,
+            size: 20,
+          ), 
+          const SizedBox(width: 4),
+          Text(value, style: const TextStyle(color: Colors.white, fontSize: 13)),
+          const SizedBox(width: 12),
+        ],
+      ),
+    ); 
   }
 
   Widget _customTextField(String label, TextEditingController ctrl, ThemeData theme, {IconData? icon, bool isNumber = false, bool isSalary = false, bool isPhone = false, bool isIBAN = false, bool isDate = false, int maxLines = 1, bool isRequired = false, bool readOnly = false, bool autoFocus = false, FocusNode? focusNode, FocusNode? nextFocus, String? Function(String?)? validator, String? hint}) {
@@ -736,11 +756,82 @@ class _RegistrationFormViewState extends State<RegistrationFormView> {
   }
 
   String? _getValueForLabel(String label) {
-    if (label == 'Department') return _selectedDepartment;
     if (label == 'Emp Type') return _employmentType;
     if (label == 'Emp Status') return _employeeStatus;
     if (label == 'Marital Status') return _maritalStatus;
     return null;
+  }
+
+  Widget _customObjectDropdown(String label, List<Map<String, dynamic>> items, ThemeData theme, Function(String?) onChanged, {bool isRequired = false, String? selectedValue}) {
+    return DropdownButtonFormField<String>(
+      value: selectedValue,
+      dropdownColor: const Color(0xFF1C1C1C),
+      style: const TextStyle(color: Colors.white, fontSize: 14),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
+        prefixIcon: Icon(label == 'Department' ? Icons.business_outlined : Icons.list_alt, color: Colors.grey[600], size: 18),
+        filled: true,
+        fillColor: const Color(0xFF2C2C2C).withOpacity(0.5),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.05))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.05))),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+      items: items.map((e) => DropdownMenuItem(value: e['id'].toString(), child: Text(e['name'].toString()))).toList(),
+      onChanged: onChanged,
+      validator: isRequired ? (val) => val == null ? 'Required' : null : null,
+    );
+  }
+
+  Widget _designationDropdown(String label, ThemeData theme) {
+    return DropdownButtonFormField<String>(
+      value: _selectedDesignationId,
+      dropdownColor: const Color(0xFF1C1C1C),
+      style: const TextStyle(color: Colors.white, fontSize: 14),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
+        prefixIcon: Icon(Icons.work_history_outlined, color: Colors.grey[600], size: 18),
+        filled: true,
+        fillColor: const Color(0xFF2C2C2C).withOpacity(0.5),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.05))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.05))),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+      hint: Text(_designationsList.isEmpty ? 'No designations available' : 'Select Designation', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+      items: _designationsList.map((e) => DropdownMenuItem(value: e['id'].toString(), child: Text(e['name'].toString()))).toList(),
+      onChanged: _designationsList.isEmpty ? null : (val) => setState(() => _selectedDesignationId = val),
+    );
+  }
+
+  Widget _shiftDropdown(String label, ThemeData theme) {
+    final shiftIds = _shiftsList.map((s) => s['id'].toString()).toSet();
+    final validId = (_selectedShiftId != null && shiftIds.contains(_selectedShiftId)) ? _selectedShiftId : null;
+    return DropdownButtonFormField<String>(
+      value: validId,
+      dropdownColor: const Color(0xFF1C1C1C),
+      isExpanded: true,
+      style: const TextStyle(color: Colors.white, fontSize: 14),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
+        prefixIcon: Icon(Icons.access_time_outlined, color: Colors.grey[600], size: 18),
+        filled: true,
+        fillColor: const Color(0xFF2C2C2C).withOpacity(0.5),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.05))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.05))),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+      hint: Text(_shiftsList.isEmpty ? 'No shifts available' : 'Select Working Shift', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+      items: _shiftsList.map((s) {
+        final id = s['id'].toString();
+        final name = s['name']?.toString() ?? 'Unknown';
+        final start = s['start_time']?.toString() ?? '';
+        final end = s['end_time']?.toString() ?? '';
+        return DropdownMenuItem(value: id, child: Text('$name  ($start – $end)'));
+      }).toList(),
+      onChanged: _shiftsList.isEmpty ? null : (val) => setState(() => _selectedShiftId = val),
+    );
   }
 
   Widget _employeeDropdown(String label, String? selectedId, ThemeData theme, Function(String?) onChanged) {

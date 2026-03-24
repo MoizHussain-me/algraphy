@@ -1,4 +1,5 @@
 import 'package:algraphy/core/utils/constants.dart';
+import 'package:algraphy/core/theme/colors.dart';
 import 'package:algraphy/modules/employee/data/employee_repository.dart';
 import 'package:algraphy/modules/tasks/data/models/task_model.dart';
 import 'package:algraphy/modules/tasks/data/repository/tasks_repository.dart';
@@ -62,9 +63,9 @@ class _CreateTaskViewState extends State<CreateTaskView> {
         return Theme(
           data: ThemeData.dark().copyWith(
             colorScheme: const ColorScheme.dark(
-              primary: Color(0xFFDC2726),
+              primary: AppColors.primaryRed,
               onPrimary: Colors.white,
-              surface: Color(0xFF1C1C1C),
+              surface: const Color(0xFF1C1C1C),
               onSurface: Colors.white,
             ),
           ),
@@ -285,7 +286,7 @@ class _CreateTaskViewState extends State<CreateTaskView> {
       child: ElevatedButton(
         onPressed: _isSubmitting ? null : _submitTask,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFDC2726),
+          backgroundColor: AppColors.primaryRed,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           elevation: 0,
         ),
@@ -299,7 +300,7 @@ class _CreateTaskViewState extends State<CreateTaskView> {
   Color _getPriorityColor(TaskPriority p) {
     switch (p) {
       case TaskPriority.low: return Colors.blue;
-      case TaskPriority.medium: return Colors.orange;
+      case TaskPriority.medium: return AppColors.primaryRed;
       case TaskPriority.high: return Colors.redAccent;
       case TaskPriority.critical: return Colors.purple;
     }
@@ -394,7 +395,7 @@ class _CollaboratorPickerModalState extends State<_CollaboratorPickerModal> {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFFDC2726).withOpacity(0.1) : Colors.transparent,
+                    color: isSelected ? AppColors.primaryRed.withOpacity(0.1) : Colors.transparent,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: ListTile(
@@ -403,7 +404,7 @@ class _CollaboratorPickerModalState extends State<_CollaboratorPickerModal> {
                       child: Text(emp['first_name'][0], style: const TextStyle(color: Colors.white)),
                     ),
                     title: Text("${emp['first_name']} ${emp['last_name']}", style: const TextStyle(color: Colors.white, fontSize: 14)),
-                    trailing: isSelected ? const Icon(Icons.check_circle, color: Color(0xFFDC2726)) : null,
+                    trailing: isSelected ? const Icon(Icons.check_box, color: AppColors.primaryRed) : null,
                     onTap: () {
                       setState(() {
                         if (isSelected) {
@@ -426,7 +427,7 @@ class _CollaboratorPickerModalState extends State<_CollaboratorPickerModal> {
             child: ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFDC2726),
+                backgroundColor: AppColors.primaryRed,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               child: const Text("Confirm Selection", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),

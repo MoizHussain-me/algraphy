@@ -3,6 +3,7 @@ import 'package:algraphy/modules/tasks/data/repository/tasks_repository.dart';
 import 'package:algraphy/modules/tasks/presentation/views/task_details_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
+import 'package:algraphy/core/theme/colors.dart';
 
 class TasksBoardView extends StatelessWidget {
   final List<TaskModel> tasks;
@@ -185,7 +186,7 @@ class _BoardCard extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.check_circle_outline, size: 12, color: Colors.grey),
+                        const Icon(Icons.check_box, size: 12, color: Colors.grey),
                         const SizedBox(width: 4),
                         Text(
                           "${task.subtasks.where((s) => s.isCompleted).length}/${task.subtasks.length}",
@@ -234,7 +235,7 @@ class _BoardCard extends StatelessWidget {
   Color _getPriorityColor() {
     switch (task.priority) {
       case TaskPriority.low: return Colors.blue;
-      case TaskPriority.medium: return Colors.orange;
+      case TaskPriority.medium: return AppColors.primaryRed;
       case TaskPriority.high: return Colors.redAccent;
       case TaskPriority.critical: return Colors.purple;
     }
@@ -276,10 +277,10 @@ class _BoardCard extends StatelessWidget {
               ),
               child: CircleAvatar(
                 radius: 10,
-                backgroundColor: const Color(0xFFDC2726).withOpacity(0.2),
+                backgroundColor: AppColors.primaryRed.withOpacity(0.2),
                 child: Text(
                   (task.collaborators[i]['first_name'] as String?)?.substring(0, 1).toUpperCase() ?? '?',
-                  style: const TextStyle(color: Color(0xFFDC2726), fontSize: 9, fontWeight: FontWeight.bold),
+                  style: const TextStyle(color: AppColors.primaryRed, fontSize: 9, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
