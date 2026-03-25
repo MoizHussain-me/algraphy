@@ -29,8 +29,8 @@ class ChatRoom {
       lastMessage: map['last_message'],
       lastMessageTime: DateTime.tryParse(map['last_message_time'] ?? '')?.toLocal(),
       unreadCount: int.tryParse(map['unread_count']?.toString() ?? '0') ?? 0,
-      participantName: "${map['first_name'] ?? ''} ${map['last_name'] ?? ''}".trim(),
-      participantImage: map['profile_picture'],
+      participantName: map['display_name'] ?? "${map['first_name'] ?? ''} ${map['last_name'] ?? ''}".trim(),
+      participantImage: map['display_image'] ?? map['profile_picture'],
     );
   }
 

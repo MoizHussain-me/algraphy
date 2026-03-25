@@ -14,7 +14,8 @@ class ChatRoomsLoaded extends ChatState {
 
 class ChatMessagesLoaded extends ChatState {
   final List<ChatMessage> messages;
-  ChatMessagesLoaded(this.messages);
+  final ChatMessage? replyTo;
+  ChatMessagesLoaded(this.messages, {this.replyTo});
 }
 
 class ChatError extends ChatState {

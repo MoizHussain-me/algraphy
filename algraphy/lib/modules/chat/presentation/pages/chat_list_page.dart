@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../config/di/injector.dart';
@@ -7,21 +8,50 @@ import '../../data/repositories/chat_repository.dart';
 import '../bloc/chat_bloc.dart';
 import '../bloc/chat_event.dart';
 import '../bloc/chat_state.dart';
+import '../widgets/create_group_sheet.dart';
 import '../widgets/user_selection_sheet.dart';
 import 'chat_detail_page.dart';
 
-class ChatListPage extends StatelessWidget {
+class ChatListPage extends StatefulWidget {
   const ChatListPage({super.key});
 
   @override
+  State<ChatListPage> createState() => _ChatListPageState();
+}
+
+class _ChatListPageState extends State<ChatListPage> {
+  Timer? _timer;
+  late ChatBloc _chatBloc;
+
+  @override
+  void initState() {
+    super.initState();
+    _chatBloc = ChatBloc(getIt<ChatRepository>());
+    _chatBloc.add(LoadChatRooms());
+    
+    // Polling rooms every 5 seconds for real-time updates
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted) {
+        _chatBloc.add(LoadChatRooms());
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _chatBloc.close();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => ChatBloc(getIt<ChatRepository>())..add(LoadChatRooms()),
+    return BlocProvider.value(
+      value: _chatBloc,
       child: BlocListener<ChatBloc, ChatState>(
         listener: (context, state) {
           if (state is ChatStarted) {
-            // Navigate to detail page with a clean title (needs participant info)
-            // For now, reload rooms to get the full info or pass it from selection
+            // Navigate to detail page logic
           }
         },
         child: Scaffold(
@@ -32,22 +62,23 @@ class ChatListPage extends StatelessWidget {
               Expanded(
                 child: BlocBuilder<ChatBloc, ChatState>(
                   builder: (context, state) {
-                    if (state is ChatLoading) {
+                    if (state is ChatLoading && _chatBloc.state is! ChatRoomsLoaded) {
                       return const Center(child: CircularProgressIndicator());
-                    } else if (state is ChatRoomsLoaded) {
-                      if (state.rooms.isEmpty) {
+                    } else if (state is ChatRoomsLoaded || _chatBloc.state is ChatRoomsLoaded) {
+                      final rooms = state is ChatRoomsLoaded ? state.rooms : (_chatBloc.state as ChatRoomsLoaded).rooms;
+                      if (rooms.isEmpty) {
                         return _buildEmptyState();
                       }
                       return ListView.separated(
                         padding: const EdgeInsets.symmetric(vertical: 8),
-                        itemCount: state.rooms.length,
+                        itemCount: rooms.length,
                         separatorBuilder: (context, index) => const Divider(
                           height: 1,
                           indent: 80,
                           color: Colors.white10,
                         ),
                         itemBuilder: (context, index) {
-                          final room = state.rooms[index];
+                          final room = rooms[index];
                           return _buildChatTile(context, room);
                         },
                       );
@@ -60,12 +91,23 @@ class ChatListPage extends StatelessWidget {
               ),
             ],
           ),
-          floatingActionButton: Builder(
-            builder: (blocContext) => FloatingActionButton(
-              onPressed: () => _startNewConversation(blocContext),
-              backgroundColor: AppColors.primaryRed,
-              child: const Icon(Icons.message, color: Colors.white),
-            ),
+          floatingActionButton: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FloatingActionButton.small(
+                onPressed: () => _createNewGroup(context),
+                backgroundColor: Colors.white24,
+                heroTag: 'new_group',
+                child: const Icon(Icons.group_add, color: Colors.white),
+              ),
+              const SizedBox(height: 12),
+              FloatingActionButton(
+                onPressed: () => _startNewConversation(context),
+                backgroundColor: AppColors.primaryRed,
+                heroTag: 'new_chat',
+                child: const Icon(Icons.message, color: Colors.white),
+              ),
+            ],
           ),
         ),
       ),
@@ -80,14 +122,14 @@ class ChatListPage extends StatelessWidget {
       builder: (context) => const UserSelectionSheet(),
     );
 
-    if (result != null && context.mounted) {
+    if (result != null && mounted) {
       final int otherUserId = int.tryParse(result['userId']?.toString() ?? result['user_id']?.toString() ?? '0') ?? 0;
       if (otherUserId > 0) {
         try {
           final repo = getIt<ChatRepository>();
           final roomId = await repo.startChat(otherUserId);
           
-          if (context.mounted) {
+          if (mounted) {
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -98,17 +140,40 @@ class ChatListPage extends StatelessWidget {
                 ),
               ),
             ).then((_) {
-              context.read<ChatBloc>().add(LoadChatRooms());
+              _chatBloc.add(LoadChatRooms());
             });
           }
         } catch (e) {
-          if (context.mounted) {
+          if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Error starting chat: $e')),
             );
           }
         }
       }
+    }
+  }
+
+  Future<void> _createNewGroup(BuildContext context) async {
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const CreateGroupSheet(),
+    );
+
+    if (result != null && mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChatDetailPage(
+            roomId: result['roomId'],
+            participantName: result['name'],
+          ),
+        ),
+      ).then((_) {
+        _chatBloc.add(LoadChatRooms());
+      });
     }
   }
 
@@ -198,8 +263,7 @@ class ChatListPage extends StatelessWidget {
             ),
           ),
         ).then((_) {
-          // Refresh rooms when coming back
-          context.read<ChatBloc>().add(LoadChatRooms());
+          _chatBloc.add(LoadChatRooms());
         });
       },
     );

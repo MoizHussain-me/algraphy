@@ -526,7 +526,10 @@ class _RegistrationFormViewState extends State<RegistrationFormView> {
                         _fieldSpacer(),
                         _customDropdown("Marital Status", ["Single", "Married", "Divorced"], theme, (val) => setState(() => _maritalStatus = val)),
                         _fieldSpacer(),
-                        Row(
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Text("Gender: ", style: TextStyle(color: theme.hintColor, fontSize: 13)),
                             _buildGenderRadio("Male", theme),
@@ -591,7 +594,7 @@ class _RegistrationFormViewState extends State<RegistrationFormView> {
             children: [
               Icon(icon, color: const Color(0xFFDC2726), size: 20),
               const SizedBox(width: 12),
-              Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              Flexible(child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
             ],
           ),
           const SizedBox(height: 20),
@@ -739,6 +742,7 @@ class _RegistrationFormViewState extends State<RegistrationFormView> {
     return DropdownButtonFormField<String>(
       value: initialVal, 
       dropdownColor: const Color(0xFF1C1C1C), 
+      isExpanded: true,
       validator: isRequired ? (val) => val == null ? 'Required' : null : null, 
       style: const TextStyle(color: Colors.white, fontSize: 14), 
       decoration: InputDecoration(
@@ -766,7 +770,8 @@ class _RegistrationFormViewState extends State<RegistrationFormView> {
     return DropdownButtonFormField<String>(
       value: selectedValue,
       dropdownColor: const Color(0xFF1C1C1C),
-      style: const TextStyle(color: Colors.white, fontSize: 14),
+      isExpanded: true,
+      style: const TextStyle(color: Colors.white, fontSize: 14), 
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
@@ -787,7 +792,8 @@ class _RegistrationFormViewState extends State<RegistrationFormView> {
     return DropdownButtonFormField<String>(
       value: _selectedDesignationId,
       dropdownColor: const Color(0xFF1C1C1C),
-      style: const TextStyle(color: Colors.white, fontSize: 14),
+      isExpanded: true,
+      style: const TextStyle(color: Colors.white, fontSize: 14), 
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(color: Colors.grey[400], fontSize: 13),

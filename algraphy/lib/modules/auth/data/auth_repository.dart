@@ -155,6 +155,16 @@ class AuthRepository {
 
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString(AppConstants.tokenKey);
+    
+    if (token != null) {
+      try {
+        await _api.post('logout', {}, token: token);
+      } catch (e) {
+        logger.e("AUTH: Logout API failed: $e");
+      }
+    }
+
     await prefs.remove(AppConstants.tokenKey);
     await prefs.remove(AppConstants.userKey);
     logger.i("AUTH: Session cleared.");

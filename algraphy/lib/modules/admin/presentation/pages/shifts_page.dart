@@ -268,15 +268,26 @@ class _ShiftsPageState extends State<ShiftsPage> {
           children: [
             Padding(
               padding: const EdgeInsets.only(top: 6),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.schedule, size: 14, color: Colors.grey),
-                  const SizedBox(width: 4),
-                  Text("$startTime – $endTime", style: const TextStyle(fontSize: 13)),
-                  const SizedBox(width: 12),
-                  const Icon(Icons.timer_outlined, size: 14, color: const Color(0xFFDC2726)),
-                  const SizedBox(width: 4),
-                  Text("$grace min grace", style: const TextStyle(fontSize: 13, color: const Color(0xFFDC2726))),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.schedule, size: 14, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Flexible(child: Text("$startTime – $endTime", style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.timer_outlined, size: 14, color: const Color(0xFFDC2726)),
+                      const SizedBox(width: 4),
+                      Flexible(child: Text("$grace min grace", style: const TextStyle(fontSize: 13, color: const Color(0xFFDC2726)), overflow: TextOverflow.ellipsis)),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -296,7 +307,10 @@ class _ShiftsPageState extends State<ShiftsPage> {
             ),
             IconButton(
               icon: const Icon(Icons.delete_outline, color: Colors.red),
-              onPressed: () => _deleteItem(item['id'] as int),
+              onPressed: () {
+                final id = int.tryParse(item['id']?.toString() ?? '0') ?? 0;
+                if (id != 0) _deleteItem(id);
+              },
             ),
           ],
         ),
